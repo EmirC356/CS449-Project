@@ -12,11 +12,11 @@
 
 | Person | Area |
 |---|---|
-| **Osman** | Hardware: ESP32 firmware, buttons / LED / vibration, WebSocket + serial fallback |
-| **Bekir** | Frontend: browser IDE (Monaco + Pyodide), hint panel, 3 condition modes, on-screen fallback buttons |
-| **Emir** | Backend: FastAPI, calibration policy, hint generation with the LLM, event logging, integration |
-| **Arda** | Research & evaluation: interviews, study protocol, questionnaires, recruiting, ethics/consent |
-| **Cem** | Study content + docs: buggy programs, hint ladder review, comparable systems, slides & report lead |
+| **1** | Hardware: ESP32 firmware, buttons / LED / vibration, WebSocket + serial fallback |
+| **2** | Frontend: browser IDE (Monaco + Pyodide), hint panel, 3 condition modes, on-screen fallback buttons |
+| **3** | Backend: FastAPI, calibration policy, hint generation with the LLM, event logging, integration |
+| **4** | Research & evaluation: interviews, study protocol, questionnaires, recruiting, ethics/consent |
+| **5** | Study content + docs: buggy programs, hint ladder review, comparable systems, slides & report lead |
 
 Everyone presents a section at every presentation (required).
 
