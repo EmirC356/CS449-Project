@@ -1,0 +1,1076 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Calibrated Debugging Tutor</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/python/python.min.js"></script>
+<style>
+  :root {
+    --bg: #f4f6f8; --panel: #ffffff; --text: #1b2430; --muted: #5b6b7f; --border: #d7dde5;
+    --accent: #0f7b6c; --accent-soft: #e2f1ee; --amber: #c97a00; --amber-soft: #fdf3e1;
+    --slate: #6b7a8f; --red: #b42318; --red-soft: #fdecea; --green: #067647; --green-soft: #e6f6ec;
+    --code-bg: #1e2430; --code-text: #e6edf3;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font: 15px/1.5 "Segoe UI", system-ui, Arial, sans-serif; background: var(--bg); color: var(--text); }
+  button { font: inherit; padding: 7px 14px; border-radius: 8px; border: 1px solid var(--border); background: var(--panel); color: var(--text); cursor: pointer; }
+  button:hover:not(:disabled) { border-color: var(--accent); }
+  button:disabled { opacity: .45; cursor: not-allowed; }
+  button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  button.small { padding: 3px 10px; font-size: 13px; }
+  input, select, textarea { font: inherit; padding: 6px 8px; border: 1px solid var(--border); border-radius: 6px; background: var(--panel); color: var(--text); }
+  kbd { font: 11px Consolas, monospace; padding: 1px 4px; border-radius: 4px; background: rgba(0,0,0,.12); margin-left: 4px; }
+  .hidden { display: none !important; }
+
+  header { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; padding: 10px 18px; background: var(--panel); border-bottom: 1px solid var(--border); }
+  header .brand { font-weight: 700; }
+  .badge { font-size: 13px; font-weight: 600; padding: 3px 10px; border-radius: 99px; color: #fff; background: var(--slate); }
+  .badge.A { background: var(--amber); } .badge.B { background: var(--slate); } .badge.C { background: var(--accent); }
+  #taskLabel { color: var(--muted); font-size: 14px; }
+  .spacer { flex: 1; }
+  #timer { font: 600 16px Consolas, monospace; padding: 2px 8px; border-radius: 6px; background: var(--bg); }
+  #timer.low { color: var(--red); }
+  .chip { font-size: 12px; padding: 3px 9px; border-radius: 99px; background: var(--bg); color: var(--muted); border: 1px solid var(--border); white-space: nowrap; }
+  .chip.ok { background: var(--green-soft); color: var(--green); border-color: #b7e4c7; }
+  .chip.err { background: var(--red-soft); color: var(--red); border-color: #f5c2bd; }
+  .chip.wait { background: var(--amber-soft); color: var(--amber); border-color: #f3d9a4; }
+
+  main { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 16px; padding: 16px 18px; max-width: 1500px; margin: 0 auto; }
+  @media (max-width: 900px) { main { grid-template-columns: 1fr; } }
+  .card { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; min-width: 0; }
+  h2 { font-size: 17px; margin: 0 0 4px; }
+  .muted { color: var(--muted); }
+  #taskDesc { margin: 0 0 10px; color: var(--muted); }
+  #editorWrap { border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+  .CodeMirror { height: 300px; font: 14px/1.5 Consolas, "Cascadia Code", monospace; }
+  .CodeMirror.readonly { opacity: .6; }
+  .runbar { display: flex; align-items: center; gap: 10px; margin: 10px 0; }
+  .results { min-height: 60px; }
+  .err-box { background: var(--red-soft); border: 1px solid #f5c2bd; color: var(--red); border-radius: 8px; padding: 8px 10px; font: 13px Consolas, monospace; white-space: pre-wrap; }
+  .ok-box { background: var(--green-soft); border: 1px solid #b7e4c7; color: var(--green); border-radius: 8px; padding: 8px 10px; font-weight: 600; }
+  .tests { list-style: none; padding: 0; margin: 8px 0 0; font: 13px Consolas, monospace; }
+  .tests li { padding: 4px 0; border-bottom: 1px dashed var(--border); }
+  .tests .pass { color: var(--green); } .tests .fail { color: var(--red); }
+  pre.stdout { background: var(--code-bg); color: var(--code-text); padding: 8px 10px; border-radius: 8px; font-size: 13px; max-height: 120px; overflow: auto; margin: 8px 0 0; }
+
+  .panelHead { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+  #condNote { font-size: 13px; color: var(--muted); text-align: right; }
+  .ladder { display: flex; gap: 6px; margin: 10px 0; }
+  .step { flex: 1; text-align: center; padding: 6px 2px; border-radius: 8px; border: 1px solid var(--border); font-size: 12px; color: var(--muted); line-height: 1.25; }
+  .step b { display: block; font-size: 14px; }
+  .step.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .step.offered { border: 2px dashed var(--accent); color: var(--accent); animation: pulse 1.2s ease-in-out infinite; }
+  @keyframes pulse { 50% { background: var(--accent-soft); } }
+  .offer { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; background: var(--accent-soft); border: 1px solid #b9dcd5; border-radius: 10px; padding: 10px 12px; margin-bottom: 10px; }
+  .offer .spacer { flex: 1; }
+  .hints { display: flex; flex-direction: column; gap: 10px; max-height: 430px; overflow-y: auto; padding-right: 2px; }
+  .hint { border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; background: #fafbfc; }
+  .hint.lv4 { background: var(--amber-soft); border-color: #f3d9a4; }
+  .hint .hhead { display: flex; justify-content: space-between; font-size: 12px; color: var(--muted); margin-bottom: 4px; }
+  .hint .hhead b { color: var(--accent); font-size: 13px; }
+  .hint .body { overflow-wrap: anywhere; }
+  .hint .body pre { background: var(--code-bg); color: var(--code-text); padding: 8px 10px; border-radius: 8px; overflow-x: auto; font-size: 13px; }
+  .hint .body code { font-family: Consolas, monospace; font-size: 13px; background: rgba(15,123,108,.1); padding: 0 3px; border-radius: 4px; }
+  .hint .body pre code { background: none; padding: 0; }
+  .hint .err { color: var(--red); font-size: 13px; }
+  .thinking { color: var(--muted); font-style: italic; }
+  .thinking::after { content: "…"; animation: dots 1s steps(3) infinite; }
+  @keyframes dots { 0% { content: ""; } 33% { content: "."; } 66% { content: ".."; } }
+  .conf { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-top: 8px; font-size: 13px; color: var(--muted); }
+  .conf button { padding: 2px 9px; font-size: 13px; }
+  .conf button.sel { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .controls { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+  .controls button.on { background: var(--slate); color: #fff; border-color: var(--slate); }
+  #notice { min-height: 22px; margin-top: 8px; font-size: 14px; color: var(--accent); }
+  #policy { margin-top: 8px; font: 12px Consolas, monospace; color: var(--muted); border-top: 1px dashed var(--border); padding-top: 6px; }
+  .empty { color: var(--muted); font-size: 14px; padding: 8px 0; }
+
+  dialog { border: none; border-radius: 14px; padding: 0; width: min(640px, calc(100vw - 32px)); box-shadow: 0 20px 60px rgba(0,0,0,.25); color: var(--text); background: var(--panel); }
+  dialog::backdrop { background: rgba(20,28,38,.55); }
+  .dlg { padding: 20px 22px; max-height: 85vh; overflow-y: auto; }
+  .dlg h3 { margin: 0 0 6px; font-size: 19px; }
+  .dlg .row { display: grid; grid-template-columns: 150px 1fr; gap: 8px 12px; align-items: center; margin: 8px 0; }
+  .dlg .row > label { font-size: 14px; color: var(--muted); }
+  .dlg .actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; flex-wrap: wrap; }
+  .dlg fieldset { border: 1px solid var(--border); border-radius: 10px; margin: 12px 0; padding: 8px 12px 10px; }
+  .dlg legend { font-weight: 600; font-size: 14px; padding: 0 4px; }
+  .scale { display: flex; gap: 6px; flex-wrap: wrap; margin: 6px 0; }
+  .scale button.sel { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .q { margin: 10px 0; }
+  .q > div:first-child { font-size: 14px; }
+  .q .ends { display: flex; justify-content: space-between; font-size: 12px; color: var(--muted); }
+  input[type=range] { width: 100%; padding: 0; }
+  .plan { font: 13px Consolas, monospace; background: var(--bg); border-radius: 8px; padding: 8px 10px; margin-top: 6px; }
+  .status-line { font-size: 13px; margin-top: 6px; }
+  @media (max-width: 560px) { .dlg .row { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+
+<header>
+  <span class="brand">Debugging Tutor</span>
+  <span id="condBadge" class="badge">–</span>
+  <span id="taskLabel"></span>
+  <span id="demoPick" class="hidden">
+    <select id="selCond" aria-label="Condition">
+      <option value="A">A · Full answer</option><option value="B">B · Hint only</option><option value="C" selected>C · Calibrated</option>
+    </select>
+    <select id="selTask" aria-label="Task"></select>
+    <button id="btnRestart" class="small">Restart task</button>
+  </span>
+  <span class="spacer"></span>
+  <span id="timer">10:00</span>
+  <span id="chipPy" class="chip wait">Python loading</span>
+  <span id="chipLLM" class="chip wait">LLM ?</span>
+  <span id="chipDev" class="chip">Device –</span>
+  <button id="btnSettings" class="small">Settings</button>
+</header>
+
+<main>
+  <section class="card">
+    <h2 id="taskTitle">–</h2>
+    <p id="taskDesc"></p>
+    <div id="editorWrap"><textarea id="code"></textarea></div>
+    <div class="runbar">
+      <button id="btnRun" class="primary">Run tests ▶</button>
+      <span class="muted" style="font-size:13px">Ctrl+Enter</span>
+      <span class="spacer"></span>
+      <button id="btnEnd" class="small">End task</button>
+    </div>
+    <div id="results" class="results"><div class="empty">Run your code to see the test results.</div></div>
+  </section>
+
+  <section class="card">
+    <div class="panelHead"><h2>AI help</h2><span id="condNote"></span></div>
+    <div id="ladder" class="ladder"></div>
+    <div id="offer" class="offer hidden"></div>
+    <div id="hints" class="hints"></div>
+    <div class="controls">
+      <button id="btnReq" class="primary">Request<kbd>Alt+1</kbd></button>
+      <button id="btnDefer">Defer<kbd>Alt+2</kbd></button>
+      <button id="btnSilence">Silence<kbd>Alt+3</kbd></button>
+    </div>
+    <div id="notice" role="status" aria-live="polite"></div>
+    <div id="policy"></div>
+  </section>
+</main>
+
+<!-- Session setup -->
+<dialog id="dlgSession">
+  <div class="dlg">
+    <h3>Start a session</h3>
+    <p class="muted" style="margin-top:0">Use an anonymous participant ID only (for example P07). No names or student numbers.</p>
+    <div class="row"><label for="inPid">Participant ID</label><input id="inPid" value="P01" maxlength="12"></div>
+    <div class="row"><label>Mode</label>
+      <span>
+        <label><input type="radio" name="mode" value="study" checked> Study (3 tasks, counterbalanced)</label><br>
+        <label><input type="radio" name="mode" value="demo"> Free demo (pick task and condition)</label>
+      </span>
+    </div>
+    <div id="planPreview" class="plan"></div>
+    <div id="sessLLM" class="status-line"></div>
+    <div class="actions">
+      <button id="btnSessSettings">LLM / device settings</button>
+      <button id="btnSessStart" class="primary">Start</button>
+    </div>
+  </div>
+</dialog>
+
+<!-- Pre-task -->
+<dialog id="dlgTask">
+  <div class="dlg">
+    <h3 id="preTitle"></h3>
+    <p id="preDesc"></p>
+    <p id="preCond" class="muted"></p>
+    <fieldset>
+      <legend>Before you start</legend>
+      <div>How confident are you that you can fix this bug <b>without any help</b>?</div>
+      <div class="scale" id="preConf"></div>
+      <div class="q"><div class="ends"><span>1 = not at all</span><span>5 = completely</span></div></div>
+    </fieldset>
+    <div class="actions"><button id="btnPreStart" class="primary" disabled>Start task (10 min)</button></div>
+  </div>
+</dialog>
+
+<!-- Post-task questionnaire -->
+<dialog id="dlgPost">
+  <div class="dlg">
+    <h3>After the task</h3>
+    <p id="postOutcome" class="muted" style="margin-top:0"></p>
+    <fieldset>
+      <legend>Explain the bug</legend>
+      <div>In your own words: what was wrong in the code, and why did it give the wrong result?</div>
+      <textarea id="postExplain" rows="3" style="width:100%;margin-top:6px"></textarea>
+    </fieldset>
+    <fieldset>
+      <legend>Autonomy (1 = strongly disagree, 7 = strongly agree)</legend>
+      <div id="postAut"></div>
+    </fieldset>
+    <fieldset>
+      <legend>Workload (NASA-TLX)</legend>
+      <div id="postTlx"></div>
+    </fieldset>
+    <div class="actions"><button id="btnPostSubmit" class="primary">Submit and continue</button></div>
+  </div>
+</dialog>
+
+<!-- Session done -->
+<dialog id="dlgDone">
+  <div class="dlg">
+    <h3>Session complete</h3>
+    <p>Thank you! The researcher can now export the log.</p>
+    <div class="actions">
+      <button class="exportJson">Export JSON</button><button class="exportCsv">Export CSV</button>
+      <button id="btnNewSession" class="primary">New session</button>
+    </div>
+  </div>
+</dialog>
+
+<!-- Settings -->
+<dialog id="dlgSettings">
+  <div class="dlg">
+    <h3>Settings</h3>
+    <fieldset>
+      <legend>Local LLM</legend>
+      <div class="row"><label for="stApi">API type</label>
+        <select id="stApi"><option value="ollama">Ollama (native /api/chat)</option><option value="openai">OpenAI-compatible (/v1: LM Studio, llama.cpp, vLLM, Ollama)</option></select></div>
+      <div class="row"><label for="stEndpoint">Endpoint</label><input id="stEndpoint" placeholder="http://localhost:11434"></div>
+      <div class="row"><label for="stModel">Model</label><span style="display:flex;gap:6px"><select id="stModel" style="flex:1;min-width:0"></select><button id="btnModels" class="small">Refresh</button></span></div>
+      <div class="row"><label for="stKey">API key</label><input id="stKey" placeholder="optional, OpenAI-compatible only" type="password"></div>
+      <div class="row"><label for="stReason">Reasoning</label>
+        <select id="stReason"><option value="low">low (fast, good for gpt-oss)</option><option value="medium">medium</option><option value="high">high</option><option value="off">off</option><option value="default">model default (send nothing)</option></select></div>
+      <div class="row"><label for="stTemp">Temperature</label><input id="stTemp" type="number" min="0" max="2" step="0.1"></div>
+      <div class="row"><label for="stLang">Hint language</label><select id="stLang"><option>English</option><option value="Turkish">Turkish (Türkçe)</option></select></div>
+      <div class="actions" style="justify-content:flex-start;margin-top:6px"><button id="btnTestLLM" class="small">Test generation</button><span id="testOut" class="status-line"></span></div>
+    </fieldset>
+    <fieldset>
+      <legend>ESP32 relay</legend>
+      <div class="row"><label for="stRelay">Relay URL</label><input id="stRelay" placeholder="ws://localhost:8765"></div>
+      <div class="row"><label for="stPolicy">Researcher view</label><label><input id="stPolicy" type="checkbox"> show policy state under the hint panel</label></div>
+    </fieldset>
+    <fieldset>
+      <legend>Log</legend>
+      <div id="logInfo" class="status-line"></div>
+      <div class="actions" style="justify-content:flex-start">
+        <button class="exportJson small">Export JSON</button><button class="exportCsv small">Export CSV</button><button id="btnClearLog" class="small">Clear log</button>
+      </div>
+    </fieldset>
+    <div class="actions"><button id="btnSetCancel">Cancel</button><button id="btnSetSave" class="primary">Save</button></div>
+  </div>
+</dialog>
+
+<script>
+"use strict";
+/* ============================== content ============================== */
+const TASKS = [
+  { id: "T1", title: "Average of a list",
+    desc: "average(nums) should return the mean (average) of the numbers in the list nums.",
+    code: "def average(nums):\n    total = 0\n    for i in range(1, len(nums)):\n        total += nums[i]\n    return total / len(nums)\n",
+    tests: [{ call: "average([4, 8, 6])", expected: "6.0" }, { call: "average([10])", expected: "10.0" }, { call: "average([1, 2, 3, 4])", expected: "2.5" }] },
+  { id: "T2", title: "Count the vowels",
+    desc: "count_vowels(text) should return how many vowels (a, e, i, o, u, upper or lower case) are in text.",
+    code: "def count_vowels(text):\n    count = 0\n    for ch in text.lower():\n        if ch in \"aeiou\":\n            count += 1\n        return count\n",
+    tests: [{ call: "count_vowels(\"banana\")", expected: "3" }, { call: "count_vowels(\"Ada\")", expected: "2" }, { call: "count_vowels(\"\")", expected: "0" }] },
+  { id: "T3", title: "Largest number",
+    desc: "find_max(numbers) should return the largest number in a non-empty list.",
+    code: "def find_max(numbers):\n    largest = 0\n    for n in numbers:\n        if n > largest:\n            largest = n\n    return largest\n",
+    tests: [{ call: "find_max([3, 9, 2])", expected: "9" }, { call: "find_max([-5, -2, -8])", expected: "-2" }, { call: "find_max([7])", expected: "7" }] },
+  { id: "T4", title: "Palindrome check (spare)",
+    desc: "is_palindrome(word) should return True if the word reads the same backwards, ignoring upper/lower case.",
+    code: "def is_palindrome(word):\n    word = word.lower()\n    return word == word.reverse()\n",
+    tests: [{ call: "is_palindrome(\"Level\")", expected: "True" }, { call: "is_palindrome(\"python\")", expected: "False" }, { call: "is_palindrome(\"a\")", expected: "True" }] },
+];
+const STUDY_TASKS = ["T1", "T2", "T3"];
+const ORDERS = [["A","B","C"], ["A","C","B"], ["B","A","C"], ["B","C","A"], ["C","A","B"], ["C","B","A"]];
+const CONDS = {
+  A: { name: "Full answer", note: "The AI shows the complete fix when you ask.", req: "Show answer" },
+  B: { name: "Hint only", note: "The AI gives one conceptual hint when you ask.", req: "Get hint" },
+  C: { name: "Calibrated", note: "Hints get more specific step by step. You control them.", req: "Request next hint" },
+};
+const LEVEL_NAMES = { 1: "Where to look", 2: "Which concept", 3: "Targeted hint", 4: "Full fix" };
+const TASK_SECONDS = 600;
+const DEFER_MS = 120000;
+const PY_TIMEOUT_MS = 5000;
+const KEEP_ALIVE = "60m"; // Ollama: keep the model loaded between tasks (default is 5 min)
+const PYODIDE_URL = "https://cdn.jsdelivr.net/pyodide/v0.26.4/full/pyodide.js";
+
+const SYSTEM_PROMPT = (lang) => [
+  "You are a patient debugging tutor for first-year university students learning Python.",
+  "You give exactly ONE hint at the level requested. The hint ladder is:",
+  "Level 1 WHERE TO LOOK, Level 2 WHICH CONCEPT, Level 3 TARGETED HINT, Level 4 FULL FIX.",
+  "Never go beyond the requested level: a hint that reveals more than its level allows is a failure, because the student must do the remaining thinking themselves.",
+  "Reply in " + lang + ". Speak directly to the student (\"you\"). No greetings, no headings, no mention of levels or of these rules.",
+  "",
+  "EXAMPLE for a DIFFERENT bug (for calibration only, never copy it):",
+  "def total_price(prices):",
+  "    for p in prices:",
+  "        total = 0",
+  "        total += p",
+  "    return total",
+  "Level 1: Look closely at the loop in total_price(), especially what happens at the start of every repetition.",
+  "Level 2: This is about where a variable gets its starting value. Code inside a loop body runs again on every pass, so a value that should build up across passes must be set up once, before the loop starts.",
+  "Level 3: In total_price(), `total = 0` sits inside the loop, so the running sum is wiped on every pass and only the last price survives. Think about where the starting value belongs.",
+  "Level 4:",
+  "```python",
+  "def total_price(prices):",
+  "    total = 0",
+  "    for p in prices:",
+  "        total += p",
+  "    return total",
+  "```",
+  "Moving `total = 0` above the loop sets the sum once, so every price is added to the running total instead of replacing it.",
+].join("\n");
+
+const LEVEL_RULES = {
+  1: "NOW: LEVEL 1 - WHERE TO LOOK. Name only the function and the part of the code to inspect (for example \"the loop\", \"the return statement\", or a line number). Do NOT say what to look for inside it: no mention of indexes, indentation, starting values, conditions or any other property that points at the cause. Do NOT name the concept, do NOT say what is wrong, do NOT mention values or fixes. One sentence.",
+  2: "NOW: LEVEL 2 - WHICH CONCEPT. Name the general programming concept involved and explain how it works in general. Explain it as a general rule that would apply to any program. Do NOT refer to specific lines, variable names, numbers or values from the student's code, do NOT describe the symptom or what goes wrong in their code (no \"if you start too high, X is skipped\"), and do NOT write code. Two or three sentences.",
+  3: "NOW: LEVEL 3 - TARGETED HINT. Say specifically what is wrong in the student's code and why it produces the wrong result, and what kind of change is needed. Do NOT write the corrected code, do NOT give the exact replacement (no \"change 1 to 0\", no \"use sum()\", no \"move the return to X\"); leave the final step to the student. At most three sentences.",
+  4: "NOW: LEVEL 4 - FULL FIX. Show the corrected function in a ```python code block, then explain in two sentences why the fix works.",
+};
+
+const PY_RUNNER = [
+  "import json, sys, io, traceback, math",
+  "def _fmt(e):",
+  "    line = getattr(e, 'lineno', None) if isinstance(e, SyntaxError) else None",
+  "    for fr in traceback.extract_tb(e.__traceback__):",
+  "        if fr.filename == 'main.py':",
+  "            line = fr.lineno",
+  "    msg = ''.join(traceback.format_exception_only(type(e), e)).strip().splitlines()[-1]",
+  "    return {'type': type(e).__name__, 'message': msg, 'line': line}",
+  "def _eq(a, b):",
+  "    if isinstance(b, bool) or isinstance(a, bool):",
+  "        return a is b",
+  "    if isinstance(a, (int, float)) and isinstance(b, (int, float)):",
+  "        return math.isclose(a, b, rel_tol=1e-9, abs_tol=1e-9)",
+  "    return a == b",
+  "def _run(code, tests_json):",
+  "    tests = json.loads(tests_json)",
+  "    res = {'error': None, 'tests': [], 'stdout': ''}",
+  "    buf = io.StringIO(); old = sys.stdout; sys.stdout = buf",
+  "    ns = {'__name__': '__main__'}",
+  "    try:",
+  "        try:",
+  "            exec(compile(code, 'main.py', 'exec'), ns)",
+  "        except BaseException as e:",
+  "            res['error'] = _fmt(e)",
+  "        if res['error'] is None:",
+  "            for t in tests:",
+  "                item = {'call': t['call'], 'expected': t['expected'], 'got': None, 'passed': False}",
+  "                try:",
+  "                    got = eval(t['call'], ns)",
+  "                    item['got'] = repr(got)",
+  "                    item['passed'] = bool(_eq(got, eval(t['expected'])))",
+  "                except BaseException as e:",
+  "                    item['error'] = _fmt(e)",
+  "                res['tests'].append(item)",
+  "    finally:",
+  "        sys.stdout = old",
+  "    res['stdout'] = buf.getvalue()[-4000:]",
+  "    return json.dumps(res)",
+].join("\n");
+
+/* ============================== storage ============================== */
+const store = {
+  get(k, d) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch { return d; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch { /* private mode: keep in memory */ } },
+};
+const defaultRelay = () => location.protocol.startsWith("http") ? `ws://${location.host}` : "ws://localhost:8765";
+const DEFAULTS = { apiType: "ollama", endpoint: "http://localhost:11434", model: "", apiKey: "", reasoning: "low", temperature: 0.3, lang: "English", relay: defaultRelay(), showPolicy: true };
+
+/* ============================== state ============================== */
+const S = {
+  settings: { ...DEFAULTS, ...store.get("cdt_settings", {}) },
+  log: store.get("cdt_log", []),
+  session: { pid: "P01", mode: "study", plan: [], step: 0 },
+  task: null, cond: "C", active: false, t0: 0, timerId: null,
+  runs: 0, lastRun: null, failedRuns: 0, lastSig: null, streak: 0, bestPassed: 0, firstRunDone: false,
+  level: 0, runsSinceL3: 0, hints: [], confidence: null, silenced: false, deferUntil: 0, offer: null,
+  generating: false, noThink: false, models: [], llmOk: false, deviceSeen: false,
+};
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const fmtTime = (s) => `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
+const taskById = (id) => TASKS.find((t) => t.id === id);
+
+/* ============================== logging ============================== */
+let ws = null;
+function log(ev, data = {}) {
+  const rec = { type: "log", ev, ts: new Date().toISOString(), pid: S.session.pid, mode: S.session.mode,
+    task: S.task ? S.task.id : null, cond: S.cond, ...data };
+  S.log.push(rec);
+  store.set("cdt_log", S.log);
+  if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(rec));
+}
+function download(name, text, type) {
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([text], { type }));
+  a.download = name; a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+}
+function exportJson() { download(`cdt_log_${Date.now()}.json`, JSON.stringify(S.log, null, 2), "application/json"); }
+function exportCsv() {
+  const base = ["ts", "pid", "mode", "task", "cond", "ev"];
+  const q = (v) => `"${String(v ?? "").replace(/"/g, '""')}"`;
+  const rows = S.log.map((r) => {
+    const rest = { ...r }; base.forEach((k) => delete rest[k]); delete rest.type;
+    return [...base.map((k) => q(r[k])), q(JSON.stringify(rest))].join(",");
+  });
+  download(`cdt_log_${Date.now()}.csv`, [base.concat("data").join(","), ...rows].join("\n"), "text/csv");
+}
+
+/* ============================== editor ============================== */
+const editor = CodeMirror.fromTextArea($("code"), {
+  mode: "python", lineNumbers: true, indentUnit: 4, tabSize: 4, indentWithTabs: false, readOnly: true,
+  extraKeys: {
+    "Ctrl-Enter": () => runCode(), "Cmd-Enter": () => runCode(),
+    Tab: (cm) => cm.somethingSelected() ? cm.indentSelection("add") : cm.replaceSelection("    ", "end"),
+  },
+});
+function setEditable(on) {
+  editor.setOption("readOnly", !on);
+  editor.getWrapperElement().classList.toggle("readonly", !on);
+}
+
+/* ============================== python (pyodide in a worker) ============================== */
+let worker = null, pyReady = false, pending = null;
+function setChip(id, text, cls) { const el = $(id); el.textContent = text; el.className = "chip" + (cls ? " " + cls : ""); }
+function startWorker() {
+  pyReady = false;
+  setChip("chipPy", "Python loading", "wait");
+  const src = `importScripts(${JSON.stringify(PYODIDE_URL)});
+let py = null;
+const ready = (async () => { py = await loadPyodide({ indexURL: ${JSON.stringify(PYODIDE_URL.replace(/pyodide\.js$/, ""))} }); py.runPython(${JSON.stringify(PY_RUNNER)}); postMessage({ type: "ready" }); })()
+  .catch((e) => postMessage({ type: "fatal", error: String(e) }));
+onmessage = async (e) => {
+  await ready;
+  try {
+    py.globals.set("_code", e.data.code); py.globals.set("_tests", e.data.tests);
+    postMessage({ type: "result", id: e.data.id, result: JSON.parse(py.runPython("_run(_code, _tests)")) });
+  } catch (err) {
+    postMessage({ type: "result", id: e.data.id, result: { error: { type: "InternalError", message: String(err), line: null }, tests: [], stdout: "" } });
+  }
+};`;
+  worker = new Worker(URL.createObjectURL(new Blob([src], { type: "text/javascript" })));
+  worker.onmessage = (e) => {
+    const m = e.data;
+    if (m.type === "ready") { pyReady = true; setChip("chipPy", "Python ✓", "ok"); }
+    else if (m.type === "fatal") { setChip("chipPy", "Python failed", "err"); console.error(m.error); }
+    else if (m.type === "result" && pending && pending.id === m.id) {
+      clearTimeout(pending.timer); const p = pending; pending = null; p.resolve(m.result);
+    }
+  };
+}
+function runPython(code, tests) {
+  return new Promise((resolve) => {
+    if (!pyReady) { resolve({ error: { type: "NotReady", message: "Python is still loading. Try again in a few seconds.", line: null }, tests: [], stdout: "" }); return; }
+    const id = Math.random();
+    pending = { id, resolve, timer: setTimeout(() => {
+      worker.terminate(); pending = null; startWorker();
+      resolve({ error: { type: "Timeout", message: "Your code ran for more than 5 seconds (maybe an infinite loop). Python is restarting.", line: null }, tests: [], stdout: "" });
+    }, PY_TIMEOUT_MS) };
+    worker.postMessage({ id, code, tests: JSON.stringify(tests) });
+  });
+}
+
+/* ============================== LLM ============================== */
+const apiBase = () => S.settings.endpoint.trim().replace(/\/+$/, "");
+const v1Base = () => /\/v1$/.test(apiBase()) ? apiBase() : apiBase() + "/v1";
+const authHeaders = () => (S.settings.apiType === "openai" && S.settings.apiKey) ? { Authorization: "Bearer " + S.settings.apiKey } : {};
+
+async function listModels() {
+  const opts = { headers: authHeaders(), signal: AbortSignal.timeout(5000) };
+  if (S.settings.apiType === "ollama") {
+    const r = await fetch(apiBase() + "/api/tags", opts);
+    if (!r.ok) throw new Error("HTTP " + r.status);
+    return (await r.json()).models.map((m) => m.name);
+  }
+  const r = await fetch(v1Base() + "/models", opts);
+  if (!r.ok) throw new Error("HTTP " + r.status);
+  return ((await r.json()).data || []).map((m) => m.id);
+}
+function pickDefaultModel(models) {
+  if (S.settings.model && models.includes(S.settings.model)) return S.settings.model;
+  return models.find((m) => /^gpt-oss:20b/.test(m)) || models.find((m) => /gpt-oss/.test(m)) || models[0] || "";
+}
+function checkLLM() {
+  S.llmCheck = (async () => {
+    setChip("chipLLM", "LLM checking", "wait");
+    try {
+      S.models = await listModels();
+      S.settings.model = pickDefaultModel(S.models);
+      S.llmOk = !!S.settings.model;
+      if (S.llmOk) await warmUp();
+      else setChip("chipLLM", "LLM: no models", "err");
+    } catch (e) {
+      S.llmOk = false; S.models = [];
+      setChip("chipLLM", "LLM offline", "err");
+    }
+    renderSessLLM();
+    return S.llmOk;
+  })();
+  return S.llmCheck;
+}
+// Load the model into memory now, so the first hint is not delayed by model loading
+// (gpt-oss:20b: ~18 s cold vs ~2 s warm). keep_alive keeps it loaded for the session.
+async function warmUp() {
+  const st = S.settings, model = st.model;
+  setChip("chipLLM", "LLM loading " + model, "wait");
+  const t0 = performance.now();
+  try {
+    if (st.apiType === "ollama") {
+      const r = await fetch(apiBase() + "/api/generate", { method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ model, prompt: "", keep_alive: KEEP_ALIVE }) });
+      if (!r.ok) throw new Error("HTTP " + r.status);
+      await r.text();
+    } else {
+      const r = await fetch(v1Base() + "/chat/completions", { method: "POST", headers: { "Content-Type": "application/json", ...authHeaders() },
+        body: JSON.stringify({ model, messages: [{ role: "user", content: "Hi" }], max_tokens: 1 }) });
+      if (!r.ok) throw new Error("HTTP " + r.status);
+      await r.text();
+    }
+    log("llm_warmup", { model, ms: Math.round(performance.now() - t0) });
+  } catch (e) {
+    log("llm_warmup", { model, error: e.message });
+  }
+  if (S.settings.model === model) setChip("chipLLM", "LLM ✓ " + model, "ok");
+}
+
+async function streamChat(messages, onToken, onThinking) {
+  const st = S.settings;
+  const headers = { "Content-Type": "application/json", ...authHeaders() };
+  let url, body;
+  if (st.apiType === "ollama") {
+    url = apiBase() + "/api/chat";
+    body = { model: st.model, messages, stream: true, keep_alive: KEEP_ALIVE, options: { temperature: +st.temperature } };
+    if (st.reasoning !== "default" && !S.noThink) body.think = st.reasoning === "off" ? false : st.reasoning;
+  } else {
+    url = v1Base() + "/chat/completions";
+    body = { model: st.model, messages, stream: true, temperature: +st.temperature };
+    if (!["default", "off"].includes(st.reasoning) && !S.noThink) body.reasoning_effort = st.reasoning;
+  }
+  const res = await fetch(url, { method: "POST", headers, body: JSON.stringify(body) });
+  if (!res.ok) throw new Error(`HTTP ${res.status}: ${(await res.text()).slice(0, 300)}`);
+  const reader = res.body.getReader();
+  const dec = new TextDecoder();
+  let buf = "";
+  const handle = (line) => {
+    line = line.trim();
+    if (!line) return;
+    if (st.apiType === "ollama") {
+      const j = JSON.parse(line);
+      if (j.error) throw new Error(j.error);
+      if (j.message && j.message.thinking) onThinking();
+      if (j.message && j.message.content) onToken(j.message.content);
+    } else {
+      if (!line.startsWith("data:")) return;
+      const data = line.slice(5).trim();
+      if (data === "[DONE]") return;
+      const j = JSON.parse(data);
+      if (j.error) throw new Error(j.error.message || JSON.stringify(j.error));
+      const d = (j.choices && j.choices[0] && j.choices[0].delta) || {};
+      if (d.reasoning || d.reasoning_content) onThinking();
+      if (d.content) onToken(d.content);
+    }
+  };
+  for (;;) {
+    const { value, done } = await reader.read();
+    if (done) break;
+    buf += dec.decode(value, { stream: true });
+    const lines = buf.split("\n"); buf = lines.pop();
+    lines.forEach(handle);
+  }
+  handle(buf);
+}
+
+function describeRun() {
+  const tests = S.task.tests.map((t) => `  ${t.call} should return ${t.expected}`).join("\n");
+  const r = S.lastRun;
+  if (!r) return "The student has not run the code yet. The tests are:\n" + tests;
+  if (r.error) return `The code crashed: ${r.error.message}${r.error.line ? " (line " + r.error.line + ")" : ""}\nThe tests are:\n${tests}`;
+  return r.tests.map((t) => t.passed ? `  PASS ${t.call} == ${t.expected}`
+    : `  FAIL ${t.call} returned ${t.got ?? (t.error ? t.error.message : "?")}, expected ${t.expected}`).join("\n");
+}
+function buildMessages(level) {
+  const code = editor.getValue();
+  const numbered = code.split("\n").map((l, i) => `${String(i + 1).padStart(2, " ")}| ${l}`).join("\n");
+  const prev = S.hints.filter((h) => h.status === "done" && h.text.trim()).map((h) => `- Level ${h.level}: ${h.text.trim()}`).join("\n") || "(none)";
+  return [
+    { role: "system", content: SYSTEM_PROMPT(S.settings.lang) + "\n\n" + LEVEL_RULES[level] },
+    { role: "user", content: `TASK DESCRIPTION:\n${S.task.desc}\n\nSTUDENT CODE (line numbers added for reference):\n${numbered}\n\nLATEST RUN:\n${describeRun()}\n\nHINTS ALREADY SHOWN TO THE STUDENT:\n${prev}\n\nWrite the level ${level} (${LEVEL_NAMES[level]}) hint now. Do not repeat earlier hints.` },
+  ];
+}
+
+function md(src) {
+  return src.split("```").map((part, i) => {
+    if (i % 2 === 1) return `<pre><code>${esc(part.replace(/^[a-zA-Z]*\n/, ""))}</code></pre>`;
+    return esc(part)
+      .replace(/`([^`\n]+)`/g, "<code>$1</code>")
+      .replace(/\*\*([^*\n]+)\*\*/g, "<b>$1</b>")
+      .replace(/^#{1,6}\s*(.+)$/gm, "<b>$1</b>")
+      .replace(/\n/g, "<br>");
+  }).join("");
+}
+
+async function generateHint(level) {
+  if (!S.llmOk) { notice("The LLM is not reachable. Open Settings and check the endpoint.", true); return; }
+  const h = { id: Date.now(), level, text: "", thinking: true, status: "streaming", t0: performance.now(), conf: null, error: null };
+  S.hints.push(h); S.generating = true;
+  renderHints(); renderControls();
+  log("hint_request", { level, model: S.settings.model });
+  const messages = buildMessages(level);
+  const go = () => streamChat(messages,
+    (tok) => { h.thinking = false; h.text += tok; renderHint(h); },
+    () => { if (!h.text) { h.thinking = true; renderHint(h); } });
+  try {
+    await go();
+  } catch (e) {
+    if (!S.noThink && /think|reason/i.test(e.message)) {
+      S.noThink = true; h.text = "";
+      try { await go(); } catch (e2) { h.error = e2.message; }
+    } else { h.error = e.message; }
+  }
+  h.thinking = false;
+  h.ms = Math.round(performance.now() - h.t0);
+  if (!h.error && !h.text.trim()) h.error = "The model returned an empty answer. Try again or choose another model.";
+  h.status = h.error ? "error" : "done";
+  S.generating = false;
+  log("hint_shown", { level, model: S.settings.model, ms: h.ms, text: h.text, error: h.error });
+  if (h.status === "done") sendDevice({ cmd: "blink", led: "green" });
+  renderHint(h); renderControls(); renderPolicy();
+}
+
+/* ============================== device relay ============================== */
+function connectRelay() {
+  try { if (ws) ws.close(); } catch { /* ignore */ }
+  try { ws = new WebSocket(S.settings.relay); } catch { setChip("chipDev", "Relay URL invalid", "err"); return; }
+  const me = ws;
+  ws.onopen = () => setChip("chipDev", S.deviceSeen ? "ESP32 ✓" : "Relay ✓ · ESP32 ?", S.deviceSeen ? "ok" : "wait");
+  ws.onclose = () => { if (me !== ws) return; setChip("chipDev", "Relay offline", "err"); setTimeout(() => { if (me === ws) connectRelay(); }, 3000); };
+  ws.onmessage = (e) => {
+    let m; try { m = JSON.parse(e.data); } catch { return; }
+    if (m.source !== "esp32") return;
+    if (!S.deviceSeen) { S.deviceSeen = true; setChip("chipDev", "ESP32 ✓", "ok"); }
+    if (["request", "defer", "silence"].includes(m.event)) act(m.event, "esp32");
+  };
+}
+function sendDevice(obj) { if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ source: "app", ...obj })); }
+
+/* ============================== calibration policy ============================== */
+function offersBlocked() {
+  if (S.silenced) return "silenced";
+  if (Date.now() < S.deferUntil) return "deferred";
+  if (S.confidence !== null && S.confidence >= 4) return "high_confidence";
+  return null;
+}
+function offer(level, rule) {
+  const blocked = offersBlocked();
+  if (blocked) { log("offer_suppressed", { level, rule, reason: blocked }); return; }
+  S.offer = { level, rule };
+  log("offer", { level, rule });
+  sendDevice({ cmd: "blink", led: "yellow", vibrate: 300 });
+  renderAll();
+}
+function policyAfterRun(r, passed, total) {
+  if (S.level >= 3) S.runsSinceL3++;
+  if (S.firstRunDone && passed > S.bestPassed && passed < total && S.level > 0) {
+    S.level = 0; S.offer = null;
+    log("policy", { rule: "reset_on_progress", passed });
+    notice("Progress! A new test passes, so the hint ladder starts again at L1 for the next issue.");
+  }
+  S.bestPassed = Math.max(S.bestPassed, passed);
+  S.firstRunDone = true;
+  S.failedRuns++;
+  const sig = r.error ? `${r.error.type}@${r.error.line}` : r.tests.filter((t) => !t.passed).map((t) => `${t.call}=${t.got}`).join("|");
+  S.streak = sig === S.lastSig ? S.streak + 1 : 1;
+  S.lastSig = sig;
+  if (S.confidence !== null && S.confidence <= 2 && S.level === 0 && S.failedRuns === 1) { offer(1, "low_confidence_first_fail"); return; }
+  if (S.streak >= 3 && S.level < 4) {
+    const next = S.level + 1;
+    if (next === 4 && S.runsSinceL3 < 1) return;
+    S.streak = 0;
+    offer(next, "same_result_3_runs");
+  }
+}
+
+/* ============================== actions ============================== */
+function act(ev, source) {
+  log("button", { button: ev, source });
+  if (!S.active) { notice("Start the task first."); return; }
+  if (ev === "request") onRequest();
+  else if (ev === "defer") onDefer();
+  else if (ev === "silence") onSilence();
+}
+function onRequest() {
+  if (S.generating) { notice("Still writing the current hint…"); return; }
+  if (S.cond === "A") {
+    if (S.hints.some((h) => h.status === "done")) { notice("The full answer is already shown."); return; }
+    S.hints = S.hints.filter((h) => h.status === "done");
+    generateHint(4); return;
+  }
+  if (S.cond === "B") {
+    if (S.hints.some((h) => h.status === "done")) { notice("In this version there is one hint only."); return; }
+    S.hints = S.hints.filter((h) => h.status === "done");
+    generateHint(2); return;
+  }
+  const next = S.level + 1;
+  if (next > 4) { notice("All hint levels have been shown."); return; }
+  if (next === 4 && S.runsSinceL3 < 1) {
+    log("policy", { rule: "l4_locked" });
+    notice("Run your code once more after the L3 hint. Then the full fix unlocks.");
+    return;
+  }
+  S.level = next; S.offer = null;
+  if (next === 3) S.runsSinceL3 = 0;
+  renderLadder(); renderOffer();
+  generateHint(next);
+}
+function onDefer() {
+  if (S.cond !== "C") { notice("Defer is not used in this version."); return; }
+  S.deferUntil = Date.now() + DEFER_MS; S.offer = null;
+  sendDevice({ cmd: "led_off" });
+  log("policy", { rule: "defer", until: new Date(S.deferUntil).toISOString() });
+  notice("Okay, no hint offers for 2 minutes. You can still press Request.");
+  renderAll();
+}
+function onSilence() {
+  if (S.cond !== "C") { notice("Silence is not used in this version."); return; }
+  S.silenced = !S.silenced; S.offer = null;
+  sendDevice(S.silenced ? { cmd: "led_on", led: "blue" } : { cmd: "led_off" });
+  log("policy", { rule: S.silenced ? "silence_on" : "silence_off" });
+  notice(S.silenced ? "Silenced: no hint offers until you press Silence again. Request still works." : "Hint offers are back on.");
+  renderAll();
+}
+
+async function runCode() {
+  if (!S.active) { notice("Start the task first."); return; }
+  $("btnRun").disabled = true; $("btnRun").textContent = "Running…";
+  const code = editor.getValue();
+  const r = await runPython(code, S.task.tests);
+  $("btnRun").disabled = false; $("btnRun").textContent = "Run tests ▶";
+  if (r.error && r.error.type === "NotReady") { renderResults(r, 0, S.task.tests.length); return; }
+  const total = S.task.tests.length;
+  const passed = r.tests.filter((t) => t.passed).length;
+  S.runs++; S.lastRun = r;
+  log("run", { n: S.runs, passed, total, error: r.error, code, tests: r.tests.map((t) => ({ call: t.call, got: t.got, passed: t.passed })) });
+  renderResults(r, passed, total);
+  if (!r.error && passed === total) { finishTask("solved"); return; }
+  if (S.cond === "C") policyAfterRun(r, passed, total);
+  renderAll();
+}
+
+/* ============================== task flow ============================== */
+function resetTaskState() {
+  Object.assign(S, { runs: 0, lastRun: null, failedRuns: 0, lastSig: null, streak: 0, bestPassed: 0, firstRunDone: false,
+    level: 0, runsSinceL3: 0, hints: [], confidence: null, silenced: false, deferUntil: 0, offer: null, generating: false, active: false });
+  clearInterval(S.timerId);
+}
+function prepareTask(taskId, cond) {
+  resetTaskState();
+  S.task = taskById(taskId); S.cond = cond;
+  editor.setValue(S.task.code); editor.clearHistory(); setEditable(false);
+  $("taskTitle").textContent = S.task.title;
+  $("taskDesc").textContent = S.task.desc;
+  $("results").innerHTML = '<div class="empty">Run your code to see the test results.</div>';
+  $("timer").textContent = fmtTime(TASK_SECONDS); $("timer").classList.remove("low");
+  sendDevice({ cmd: "led_off" });
+  notice("");
+  renderAll();
+  const k = S.session.mode === "study" ? `Task ${S.session.step + 1} of ${S.session.plan.length}: ` : "";
+  $("preTitle").textContent = k + S.task.title;
+  $("preDesc").textContent = S.task.desc;
+  $("preCond").textContent = "AI help in this task: " + CONDS[cond].note;
+  buildScale($("preConf"), 5, null, (v) => { S.confidence = v; $("btnPreStart").disabled = false; });
+  $("btnPreStart").disabled = true;
+  $("dlgTask").showModal();
+}
+function startTask() {
+  $("dlgTask").close();
+  S.active = true; S.t0 = Date.now();
+  setEditable(true); editor.focus();
+  log("task_start", { confidence: S.confidence, order_step: S.session.step });
+  S.timerId = setInterval(tick, 1000); tick();
+  renderAll();
+}
+function tick() {
+  const left = TASK_SECONDS - (Date.now() - S.t0) / 1000;
+  $("timer").textContent = fmtTime(Math.max(0, left));
+  $("timer").classList.toggle("low", left < 60);
+  if (left <= 0) finishTask("timeout");
+}
+function finishTask(outcome) {
+  if (!S.active) return;
+  S.active = false; clearInterval(S.timerId); setEditable(false);
+  const seconds = Math.round((Date.now() - S.t0) / 1000);
+  S.lastOutcome = { outcome, seconds };
+  log("task_end", { outcome, seconds, runs: S.runs, hint_levels: S.hints.filter((h) => h.status === "done").map((h) => h.level), final_code: editor.getValue() });
+  sendDevice({ cmd: outcome === "solved" ? "blink" : "led_off", led: outcome === "solved" ? "green" : "off" });
+  S.offer = null;
+  renderAll();
+  const msg = { solved: `Solved in ${fmtTime(seconds)}.`, timeout: "Time is up (10 minutes).", ended: `Task ended after ${fmtTime(seconds)}.` }[outcome];
+  if (S.session.mode === "study") {
+    $("postOutcome").textContent = msg;
+    openPost();
+  } else {
+    notice(msg + " Use 'Restart task' or pick another task.");
+  }
+}
+const AUT_ITEMS = ["I decided when and how much help I received.", "I fixed the bug through my own reasoning.", "The amount of help matched what I needed."];
+const TLX_ITEMS = [
+  ["Mental demand", "How mentally demanding was the task?", "Very low", "Very high"],
+  ["Physical demand", "How physically demanding was the task?", "Very low", "Very high"],
+  ["Temporal demand", "How hurried or rushed was the pace of the task?", "Very low", "Very high"],
+  ["Performance", "How successful were you in doing what you were asked?", "Perfect", "Failure"],
+  ["Effort", "How hard did you have to work to reach your level of performance?", "Very low", "Very high"],
+  ["Frustration", "How insecure, discouraged, irritated or stressed were you?", "Very low", "Very high"],
+];
+const post = { aut: [] };
+function openPost() {
+  $("postExplain").value = "";
+  post.aut = AUT_ITEMS.map(() => null);
+  $("postAut").innerHTML = AUT_ITEMS.map((q, i) => `<div class="q"><div>${esc(q)}</div><div class="scale" id="aut${i}"></div></div>`).join("");
+  AUT_ITEMS.forEach((_, i) => buildScale($("aut" + i), 7, null, (v) => { post.aut[i] = v; }));
+  $("postTlx").innerHTML = TLX_ITEMS.map(([n, q, lo, hi], i) =>
+    `<div class="q"><div><b>${n}</b> · ${esc(q)} <span class="muted" id="tlxv${i}">50</span></div>
+     <input type="range" min="0" max="100" step="5" value="50" id="tlx${i}" aria-label="${n}">
+     <div class="ends"><span>${lo}</span><span>${hi}</span></div></div>`).join("");
+  TLX_ITEMS.forEach((_, i) => { $("tlx" + i).oninput = (e) => { $("tlxv" + i).textContent = e.target.value; }; });
+  $("dlgPost").showModal();
+}
+function submitPost() {
+  if (post.aut.some((v) => v === null)) { alert("Please answer the three autonomy questions."); return; }
+  const tlx = {}; TLX_ITEMS.forEach(([n], i) => { tlx[n] = +$("tlx" + i).value; });
+  log("questionnaire", { explanation: $("postExplain").value.trim(), autonomy: post.aut, tlx_raw: tlx,
+    tlx_mean: Math.round(Object.values(tlx).reduce((a, b) => a + b, 0) / 6 * 10) / 10, outcome: S.lastOutcome });
+  $("dlgPost").close();
+  S.session.step++;
+  if (S.session.step < S.session.plan.length) {
+    const p = S.session.plan[S.session.step]; prepareTask(p.task, p.cond);
+  } else {
+    log("session_end", {});
+    $("dlgDone").showModal();
+  }
+}
+
+/* ============================== session ============================== */
+function planFor(pid) {
+  const n = parseInt(String(pid).replace(/\D/g, ""), 10) || 1;
+  const order = ORDERS[(n - 1) % ORDERS.length];
+  return STUDY_TASKS.map((task, i) => ({ task, cond: order[i] }));
+}
+function renderPlanPreview() {
+  const mode = document.querySelector('input[name=mode]:checked').value;
+  const pid = $("inPid").value.trim() || "P01";
+  $("planPreview").innerHTML = mode === "study"
+    ? "Plan: " + planFor(pid).map((p, i) => `${i + 1}) ${p.task} · ${p.cond} ${CONDS[p.cond].name}`).join("&nbsp;&nbsp; ")
+    : "Free demo: choose any task and condition from the top bar. No questionnaires.";
+}
+function renderSessLLM() {
+  const el = $("sessLLM"); if (!el) return;
+  el.innerHTML = S.llmOk ? `<span style="color:var(--green)">LLM ready: ${esc(S.settings.model)}</span>`
+    : `<span style="color:var(--red)">LLM not reachable at ${esc(S.settings.endpoint)}. Start Ollama or open settings.</span>`;
+}
+async function startSession() {
+  const pid = ($("inPid").value.trim() || "P01").replace(/[^A-Za-z0-9_-]/g, "");
+  const mode = document.querySelector('input[name=mode]:checked').value;
+  S.session = { pid, mode, plan: mode === "study" ? planFor(pid) : [], step: 0 };
+  $("dlgSession").close();
+  await S.llmCheck; // log the model that will actually be used, not an empty one
+  log("session_start", { plan: S.session.plan, model: S.settings.model, api: S.settings.apiType, llm_ok: S.llmOk });
+  $("demoPick").classList.toggle("hidden", mode !== "demo");
+  if (mode === "study") prepareTask(S.session.plan[0].task, S.session.plan[0].cond);
+  else prepareTask($("selTask").value, $("selCond").value);
+}
+
+/* ============================== rendering ============================== */
+function notice(text, isErr) { const n = $("notice"); n.textContent = text; n.style.color = isErr ? "var(--red)" : "var(--accent)"; }
+function buildScale(el, n, sel, onPick) {
+  el.innerHTML = "";
+  for (let v = 1; v <= n; v++) {
+    const b = document.createElement("button"); b.type = "button"; b.textContent = v; b.className = "small" + (v === sel ? " sel" : "");
+    b.onclick = () => { [...el.children].forEach((c) => c.classList.remove("sel")); b.classList.add("sel"); onPick(v); };
+    el.appendChild(b);
+  }
+}
+function renderHeader() {
+  const c = CONDS[S.cond];
+  $("condBadge").textContent = `${S.cond} · ${c.name}`; $("condBadge").className = "badge " + S.cond;
+  $("taskLabel").textContent = S.task ? `${S.task.id} · ${S.session.pid}${S.session.mode === "study" ? ` · task ${S.session.step + 1}/${S.session.plan.length}` : " · demo"}` : "";
+  $("condNote").textContent = c.note;
+}
+function renderLadder() {
+  const el = $("ladder");
+  if (S.cond !== "C") {
+    el.innerHTML = `<div class="step ${S.hints.some((h) => h.status === "done") ? "on" : ""}"><b>${S.cond === "A" ? "Full answer" : "One hint"}</b>${S.cond === "A" ? "complete fix" : "concept only"}</div>`;
+    return;
+  }
+  el.innerHTML = [1, 2, 3, 4].map((l) => {
+    const cls = l <= S.level ? "on" : (S.offer && S.offer.level === l ? "offered" : "");
+    return `<div class="step ${cls}"><b>L${l}</b>${LEVEL_NAMES[l]}</div>`;
+  }).join("");
+}
+function renderOffer() {
+  const el = $("offer");
+  if (!S.offer || S.cond !== "C" || !S.active) { el.classList.add("hidden"); return; }
+  el.classList.remove("hidden");
+  el.innerHTML = `<span>💡 An <b>L${S.offer.level}</b> hint (${LEVEL_NAMES[S.offer.level].toLowerCase()}) is ready for you.</span><span class="spacer"></span>
+    <button class="small primary" id="offAccept">Show it</button><button class="small" id="offDefer">Not now</button>`;
+  $("offAccept").onclick = () => act("request", "screen");
+  $("offDefer").onclick = () => act("defer", "screen");
+}
+function hintHtml(h) {
+  const label = S.cond === "A" && h.level === 4 ? "Full answer" : `L${h.level} · ${LEVEL_NAMES[h.level]}`;
+  const meta = h.status === "streaming" ? "writing…" : (h.ms ? (h.ms / 1000).toFixed(1) + " s" : "");
+  let body;
+  if (h.error) body = `<div class="err">Could not get a hint: ${esc(h.error)}</div>`;
+  else if (!h.text && h.thinking) body = '<div class="thinking">Thinking</div>';
+  else body = `<div class="body">${md(h.text)}</div>`;
+  const conf = h.status === "done" ? `<div class="conf" data-h="${h.id}">How confident are you now? </div>` : "";
+  return `<div class="hhead"><b>${label}</b><span>${meta}</span></div>${body}${conf}`;
+}
+function renderHint(h) {
+  let el = document.getElementById("hint-" + h.id);
+  if (!el) return renderHints();
+  el.innerHTML = hintHtml(h);
+  attachConf(el, h);
+  const box = $("hints"); box.scrollTop = box.scrollHeight;
+}
+function attachConf(el, h) {
+  const c = el.querySelector(".conf"); if (!c) return;
+  const holder = document.createElement("span"); holder.className = "scale"; holder.style.margin = "0";
+  c.appendChild(holder);
+  buildScale(holder, 5, h.conf, (v) => { h.conf = v; S.confidence = v; log("confidence", { value: v, after_level: h.level }); renderPolicy(); });
+}
+function renderHints() {
+  const box = $("hints");
+  if (!S.hints.length) {
+    box.innerHTML = `<div class="empty">${S.active ? `No help yet. Press <b>${CONDS[S.cond].req}</b> (or the device button) when you want it.` : "Help appears here once the task starts."}</div>`;
+    return;
+  }
+  box.innerHTML = S.hints.map((h) => `<div class="hint ${h.level === 4 ? "lv4" : ""}" id="hint-${h.id}">${hintHtml(h)}</div>`).join("");
+  S.hints.forEach((h) => attachConf(document.getElementById("hint-" + h.id), h));
+  box.scrollTop = box.scrollHeight;
+}
+function renderControls() {
+  const isC = S.cond === "C";
+  $("btnReq").innerHTML = `${CONDS[S.cond].req}<kbd>Alt+1</kbd>`;
+  $("btnReq").disabled = !S.active || S.generating;
+  $("btnDefer").classList.toggle("hidden", !isC);
+  $("btnSilence").classList.toggle("hidden", !isC);
+  $("btnDefer").disabled = !S.active; $("btnSilence").disabled = !S.active;
+  $("btnSilence").classList.toggle("on", S.silenced);
+  $("btnSilence").innerHTML = (S.silenced ? "Silenced" : "Silence") + "<kbd>Alt+3</kbd>";
+  $("btnRun").disabled = !S.active; $("btnEnd").disabled = !S.active;
+}
+function renderPolicy() {
+  const el = $("policy");
+  if (!S.settings.showPolicy || S.cond !== "C") { el.classList.add("hidden"); return; }
+  el.classList.remove("hidden");
+  const blocked = offersBlocked();
+  const defer = Date.now() < S.deferUntil ? ` ${Math.ceil((S.deferUntil - Date.now()) / 1000)}s` : "";
+  el.textContent = `policy · level L${S.level} · confidence ${S.confidence ?? "–"} · runs ${S.runs} · same-result streak ${S.streak}/3 · runs since L3 ${S.runsSinceL3} · offers ${blocked ? blocked + defer : "on"}`;
+}
+function renderResults(r, passed, total) {
+  let h = "";
+  if (r.error) {
+    h += `<div class="err-box">${esc(r.error.message)}${r.error.line ? `\n(line ${r.error.line})` : ""}</div>`;
+  } else {
+    h += passed === total ? `<div class="ok-box">All ${total} tests pass ✓</div>` : `<div class="muted">${passed} of ${total} tests pass</div>`;
+    h += `<ul class="tests">${r.tests.map((t) => `<li class="${t.passed ? "pass" : "fail"}">${t.passed ? "✓" : "✗"} ${esc(t.call)} → ${esc(t.got ?? (t.error ? t.error.message : "?"))}${t.passed ? "" : ` <span class="muted">(expected ${esc(t.expected)})</span>`}</li>`).join("")}</ul>`;
+  }
+  if (r.stdout) h += `<pre class="stdout">${esc(r.stdout)}</pre>`;
+  $("results").innerHTML = h;
+}
+function renderAll() { renderHeader(); renderLadder(); renderOffer(); renderHints(); renderControls(); renderPolicy(); }
+setInterval(() => { if (S.active && S.cond === "C" && Date.now() < S.deferUntil + 1500) renderPolicy(); }, 1000);
+
+/* ============================== settings dialog ============================== */
+function fillModelSelect(models, current) {
+  const sel = $("stModel");
+  sel.innerHTML = models.length ? models.map((m) => `<option ${m === current ? "selected" : ""}>${esc(m)}</option>`).join("") : '<option value="">(no models found)</option>';
+}
+function openSettings() {
+  const st = S.settings;
+  $("stApi").value = st.apiType; $("stEndpoint").value = st.endpoint; $("stKey").value = st.apiKey;
+  $("stReason").value = st.reasoning; $("stTemp").value = st.temperature; $("stLang").value = st.lang;
+  $("stRelay").value = st.relay; $("stPolicy").checked = st.showPolicy;
+  fillModelSelect(S.models, st.model);
+  $("testOut").textContent = "";
+  $("logInfo").textContent = `${S.log.length} log records stored in this browser (also written to demo/events.jsonl by the relay).`;
+  $("dlgSettings").showModal();
+}
+function readSettingsForm() {
+  return { apiType: $("stApi").value, endpoint: $("stEndpoint").value.trim() || DEFAULTS.endpoint, model: $("stModel").value,
+    apiKey: $("stKey").value, reasoning: $("stReason").value, temperature: parseFloat($("stTemp").value) || 0,
+    lang: $("stLang").value, relay: $("stRelay").value.trim() || defaultRelay(), showPolicy: $("stPolicy").checked };
+}
+async function refreshModelsFromForm() {
+  const old = S.settings; S.settings = { ...old, ...readSettingsForm() };
+  $("testOut").textContent = "Loading models…";
+  try { const ms = await listModels(); S.models = ms; fillModelSelect(ms, pickDefaultModel(ms)); $("testOut").textContent = `${ms.length} models found.`; }
+  catch (e) { $("testOut").textContent = "Could not reach the endpoint: " + e.message; fillModelSelect([], ""); }
+  S.settings = old;
+}
+async function testGeneration() {
+  const old = S.settings; S.settings = { ...old, ...readSettingsForm() }; S.noThink = false;
+  const out = $("testOut"); out.textContent = "Generating…";
+  const t0 = performance.now(); let text = "";
+  try {
+    await streamChat([{ role: "user", content: "Reply with exactly: Ready to help." }], (t) => { text += t; out.textContent = text; }, () => { out.textContent = "Thinking…"; });
+    out.textContent = `✓ "${text.trim().slice(0, 60)}" in ${((performance.now() - t0) / 1000).toFixed(1)} s`;
+  } catch (e) { out.textContent = "✗ " + e.message; }
+  S.settings = old;
+}
+async function saveSettings() {
+  const prevRelay = S.settings.relay;
+  S.settings = { ...S.settings, ...readSettingsForm() }; S.noThink = false;
+  store.set("cdt_settings", S.settings);
+  $("dlgSettings").close();
+  if (S.settings.relay !== prevRelay) connectRelay();
+  await checkLLM();
+  renderPolicy();
+}
+
+/* ============================== wiring ============================== */
+TASKS.forEach((t) => { const o = document.createElement("option"); o.value = t.id; o.textContent = `${t.id} · ${t.title}`; $("selTask").appendChild(o); });
+$("btnRun").onclick = runCode;
+$("btnEnd").onclick = () => { if (confirm("End this task now?")) finishTask("ended"); };
+$("btnReq").onclick = () => act("request", "screen");
+$("btnDefer").onclick = () => act("defer", "screen");
+$("btnSilence").onclick = () => act("silence", "screen");
+$("btnSettings").onclick = openSettings;
+$("btnSessSettings").onclick = openSettings;
+$("btnSetCancel").onclick = () => $("dlgSettings").close();
+$("btnSetSave").onclick = saveSettings;
+$("btnModels").onclick = refreshModelsFromForm;
+$("stApi").onchange = () => { if ($("stApi").value === "ollama" && /:1234|:8080|:8000/.test($("stEndpoint").value)) $("stEndpoint").value = DEFAULTS.endpoint; };
+$("btnTestLLM").onclick = testGeneration;
+$("btnClearLog").onclick = () => { if (confirm("Delete all log records stored in this browser? Export first if you need them.")) { S.log = []; store.set("cdt_log", []); $("logInfo").textContent = "Log cleared."; } };
+document.querySelectorAll(".exportJson").forEach((b) => (b.onclick = exportJson));
+document.querySelectorAll(".exportCsv").forEach((b) => (b.onclick = exportCsv));
+$("btnPreStart").onclick = startTask;
+$("btnPostSubmit").onclick = submitPost;
+$("btnSessStart").onclick = startSession;
+$("btnNewSession").onclick = () => { $("dlgDone").close(); renderPlanPreview(); $("dlgSession").showModal(); };
+$("inPid").oninput = renderPlanPreview;
+document.querySelectorAll("input[name=mode]").forEach((r) => (r.onchange = renderPlanPreview));
+$("btnRestart").onclick = () => { if (S.active) finishTask("ended"); prepareTask($("selTask").value, $("selCond").value); };
+$("selTask").onchange = $("selCond").onchange = () => { if (S.active) finishTask("ended"); prepareTask($("selTask").value, $("selCond").value); };
+["dlgTask", "dlgPost", "dlgSession"].forEach((id) => $(id).addEventListener("cancel", (e) => e.preventDefault()));
+document.addEventListener("keydown", (e) => {
+  if (!e.altKey || document.querySelector("dialog[open]")) return;
+  const map = { "1": "request", "2": "defer", "3": "silence" };
+  if (map[e.key]) { e.preventDefault(); act(map[e.key], "keyboard"); }
+});
+
+startWorker();
+connectRelay();
+checkLLM();
+renderPlanPreview();
+renderAll();
+$("dlgSession").showModal();
+</script>
+</body>
+</html>
