@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hint Panel Demo</title>
+<style>
+  :root {
+    --bg: #f6f7f9; --panel: #ffffff; --text: #1d232b; --muted: #5f6b7a;
+    --border: #d9dee5; --accent: #0f7b6c; --warn: #b35c00; --code-bg: #1e2430; --code-text: #e6edf3;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font: 15px/1.5 system-ui, Segoe UI, Arial, sans-serif; background: var(--bg); color: var(--text); }
+  header { display: flex; justify-content: space-between; align-items: center; padding: 14px 20px; border-bottom: 1px solid var(--border); background: var(--panel); }
+  header h1 { font-size: 17px; margin: 0; }
+  .status { font-size: 13px; padding: 4px 10px; border-radius: 99px; background: #fde8e8; color: #9b1c1c; }
+  .status.ok { background: #def7ec; color: #03543f; }
+  main { display: grid; grid-template-columns: 1.2fr 1fr; gap: 16px; padding: 16px 20px; max-width: 1200px; margin: 0 auto; }
+  @media (max-width: 800px) { main { grid-template-columns: 1fr; } }
+  section { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; }
+  h2 { font-size: 14px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin: 0 0 10px; }
+  pre { background: var(--code-bg); color: var(--code-text); padding: 14px; border-radius: 8px; overflow-x: auto; font-size: 14px; margin: 0; }
+  .err { margin-top: 10px; font-family: Consolas, monospace; font-size: 13px; color: #9b1c1c; }
+  .ladder { display: flex; gap: 6px; margin-bottom: 12px; }
+  .step { flex: 1; text-align: center; padding: 6px 0; border-radius: 6px; border: 1px solid var(--border); font-size: 13px; color: var(--muted); }
+  .step.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .hint { min-height: 92px; padding: 12px; border-radius: 8px; background: #eef6f5; border: 1px solid #cfe5e2; }
+  .hint.silenced { background: #f3f4f6; border-color: var(--border); color: var(--muted); }
+  .controls { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+  button { font: inherit; padding: 8px 14px; border-radius: 8px; border: 1px solid var(--border); background: var(--panel); cursor: pointer; }
+  button.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .fallback-note { font-size: 12px; color: var(--muted); margin-top: 6px; }
+  #log { font-family: Consolas, monospace; font-size: 12px; max-height: 180px; overflow-y: auto; margin: 0; padding: 0; list-style: none; }
+  #log li { padding: 3px 0; border-bottom: 1px dashed var(--border); }
+  #log .hw { color: var(--accent); font-weight: 600; }
+  .flash { animation: flash .6s ease; }
+  @keyframes flash { from { box-shadow: 0 0 0 4px rgba(15,123,108,.45); } to { box-shadow: 0 0 0 0 rgba(15,123,108,0); } }
+</style>
+</head>
+<body>
+<header>
+  <h1>Calibrated AI Feedback: hint panel demo</h1>
+  <span id="status" class="status">Disconnected</span>
+</header>
+
+<main>
+  <section>
+    <h2>Task: fix average()</h2>
+<pre>def average(nums):
+    total = 0
+    for i in range(1, len(nums)):
+        total += nums[i]
+    return total / len(nums)
+
+print(average([4, 8, 6]))   # expected 6.0</pre>
+    <div class="err">Test failed: average([4, 8, 6]) returned 4.666…, expected 6.0</div>
+  </section>
+
+  <section id="panel">
+    <h2>AI hint panel</h2>
+    <div class="ladder">
+      <div class="step" data-l="1">L1 where</div>
+      <div class="step" data-l="2">L2 concept</div>
+      <div class="step" data-l="3">L3 hint</div>
+      <div class="step" data-l="4">L4 fix</div>
+    </div>
+    <div id="hint" class="hint">No hint yet. Press <b>Request</b> on the device when you want help.</div>
+    <div class="controls">
+      <button class="primary" onclick="handle('request','screen')">Request</button>
+      <button onclick="handle('silence','screen')">Silence</button>
+      <button onclick="reset()">Reset</button>
+    </div>
+    <div class="fallback-note">On-screen buttons = fallback if the hardware is unavailable.</div>
+  </section>
+
+  <section style="grid-column: 1 / -1">
+    <h2>Event log</h2>
+    <ul id="log"></ul>
+  </section>
+</main>
+
+<script>
+  const HINTS = {
+    1: "Look at the <b>for loop</b> in average(). Which elements of <code>nums</code> does it actually visit?",
+    2: "Concept: Python lists are <b>zero-indexed</b>, and <code>range(a, b)</code> starts at <code>a</code>.",
+    3: "<code>range(1, len(nums))</code> starts at index 1, so <code>nums[0]</code> is never added to the total.",
+    4: "Fix: <code>for i in range(len(nums)):</code> or simply <code>for n in nums: total += n</code>."
+  };
+  const params = new URLSearchParams(location.search);
+  const WS_URL = params.get("ws") || "ws://localhost:8765";
+  let ws, level = 0, silenced = false;
+
+  const $ = id => document.getElementById(id);
+
+  function addLog(text, fromHw) {
+    const li = document.createElement("li");
+    li.innerHTML = `${new Date().toLocaleTimeString()} &nbsp; <span class="${fromHw ? "hw" : ""}">${text}</span>`;
+    $("log").prepend(li);
+  }
+
+  function send(obj) {
+    if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(obj));
+  }
+
+  function render() {
+    document.querySelectorAll(".step").forEach(s => s.classList.toggle("on", +s.dataset.l <= level));
+    const hint = $("hint");
+    hint.classList.toggle("silenced", silenced);
+    if (silenced) hint.innerHTML = "Proactive hints are <b>silenced</b>. Request still works.";
+    else if (level === 0) hint.innerHTML = "No hint yet. Press <b>Request</b> on the device when you want help.";
+    else hint.innerHTML = `<b>L${level}:</b> ${HINTS[level]}`;
+  }
+
+  function handle(event, source) {
+    const fromHw = source === "esp32";
+    if (event === "hello") { addLog("ESP32 connected", true); return; }
+    if (event === "request") {
+      silenced = false;
+      level = Math.min(level + 1, 4);
+      send({ source: "browser", cmd: "blink", level });
+      send({ source: "browser", cmd: "led_off" });
+    } else if (event === "silence") {
+      silenced = !silenced;
+      send({ source: "browser", cmd: silenced ? "led_on" : "led_off" });
+    }
+    addLog(`${event} from ${fromHw ? "ESP32 button" : "screen"} → level L${level}${silenced ? " (silenced)" : ""}`, fromHw);
+    if (!fromHw) send({ source: "browser", event, level });
+    render();
+    $("panel").classList.remove("flash"); void $("panel").offsetWidth; $("panel").classList.add("flash");
+  }
+
+  function reset() { level = 0; silenced = false; send({ source: "browser", cmd: "led_off" }); render(); addLog("reset", false); }
+
+  function connect() {
+    ws = new WebSocket(WS_URL);
+    ws.onopen = () => { $("status").textContent = "Connected to relay"; $("status").classList.add("ok"); };
+    ws.onclose = () => { $("status").textContent = "Disconnected (retrying)"; $("status").classList.remove("ok"); setTimeout(connect, 2000); };
+    ws.onmessage = e => {
+      let msg; try { msg = JSON.parse(e.data); } catch { return; }
+      if (msg.source === "esp32" && msg.event) handle(msg.event, "esp32");
+    };
+  }
+
+  render();
+  connect();
+</script>
+</body>
+</html>
