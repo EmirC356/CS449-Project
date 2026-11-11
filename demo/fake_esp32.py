@@ -6,7 +6,8 @@ commands the browser sends back.
     python demo/fake_esp32.py                 # relay on this laptop
     python demo/fake_esp32.py 192.168.1.10    # relay on another machine
 
-Keys: Enter = request, d + Enter = defer, s + Enter = silence, q + Enter = quit
+Keys: Enter = request, d + Enter = defer, s + Enter = silence,
+      1-5 + Enter = confidence dial (planned potentiometer), q + Enter = quit
 """
 
 import asyncio
@@ -39,13 +40,17 @@ async def listen(ws):
 async def main():
     async with connect(URL) as ws:
         print(f"Fake ESP32 connected to {URL}")
-        print("Enter = request | d + Enter = defer | s + Enter = silence | q + Enter = quit")
+        print("Enter = request | d = defer | s = silence | 1-5 = confidence dial | q = quit  (then Enter)")
         await ws.send(json.dumps({"source": "esp32", "event": "hello"}))
         listener = asyncio.create_task(listen(ws))
         while True:
             key = (await asyncio.to_thread(input)).strip().lower()
             if key == "q":
                 break
+            if key in ("1", "2", "3", "4", "5"):
+                await ws.send(json.dumps({"source": "esp32", "event": "confidence", "value": int(key)}))
+                print(f"-> sent confidence {key}")
+                continue
             event = {"s": "silence", "d": "defer"}.get(key, "request")
             await ws.send(json.dumps({"source": "esp32", "event": event}))
             print(f"-> sent {event}")

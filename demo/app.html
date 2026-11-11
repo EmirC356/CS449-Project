@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Calibrated Debugging Tutor</title>
+<link rel="icon" href="data:,">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/python/python.min.js"></script>
@@ -24,6 +25,10 @@
   input, select, textarea { font: inherit; padding: 6px 8px; border: 1px solid var(--border); border-radius: 6px; background: var(--panel); color: var(--text); }
   kbd { font: 11px Consolas, monospace; padding: 1px 4px; border-radius: 4px; background: rgba(0,0,0,.12); margin-left: 4px; }
   .hidden { display: none !important; }
+  .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+  .tests-preview { font-size: 13px; color: var(--muted); margin: -4px 0 10px; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+  .tests-preview code { font: 12px Consolas, monospace; background: var(--bg); border: 1px solid var(--border); border-radius: 5px; padding: 1px 6px; }
 
   header { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; padding: 10px 18px; background: var(--panel); border-bottom: 1px solid var(--border); }
   header .brand { font-weight: 700; }
@@ -56,7 +61,8 @@
   .tests .pass { color: var(--green); } .tests .fail { color: var(--red); }
   pre.stdout { background: var(--code-bg); color: var(--code-text); padding: 8px 10px; border-radius: 8px; font-size: 13px; max-height: 120px; overflow: auto; margin: 8px 0 0; }
 
-  .panelHead { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+  .panelHead { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+  .panelHead h2 { white-space: nowrap; flex-shrink: 0; }
   #condNote { font-size: 13px; color: var(--muted); text-align: right; }
   .ladder { display: flex; gap: 6px; margin: 10px 0; }
   .step { flex: 1; text-align: center; padding: 6px 2px; border-radius: 8px; border: 1px solid var(--border); font-size: 12px; color: var(--muted); line-height: 1.25; }
@@ -84,7 +90,43 @@
   .conf button.sel { background: var(--accent); color: #fff; border-color: var(--accent); }
   .controls { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
   .controls button.on { background: var(--slate); color: #fff; border-color: var(--slate); }
-  #notice { min-height: 22px; margin-top: 8px; font-size: 14px; color: var(--accent); }
+  .notice { margin-top: 10px; font-size: 14px; }
+  .notice.info { padding: 8px 12px; border-radius: 8px; background: var(--accent-soft); border: 1px solid #b9dcd5; color: #0b5c51; }
+  .notice.err { padding: 8px 12px; border-radius: 8px; background: var(--red-soft); border: 1px solid #f5c2bd; color: var(--red); }
+  .step.locked { border-style: dashed; color: var(--muted); background: var(--bg); }
+  .offer .why { display: block; font-size: 12px; color: var(--muted); }
+  #deviceHint { font-size: 13px; color: var(--muted); margin-top: 12px; padding: 8px 12px; border: 1px dashed var(--border); border-radius: 8px; }
+  .q.missing, textarea.missing { outline: 2px solid var(--red); outline-offset: 4px; border-radius: 4px; }
+  #postErr { color: var(--red); font-size: 14px; min-height: 20px; }
+  .hint details { font-size: 12px; color: var(--muted); margin-top: 4px; }
+  #preIntro ul { margin: 6px 0 0; padding-left: 20px; }
+  /* guide bar: practice checklist / measured-task banner */
+  #guide { max-width: 1500px; margin: 14px auto 0; padding: 0 18px; }
+  #guide > div { border-radius: 12px; padding: 12px 16px; display: flex; gap: 16px; align-items: flex-start; flex-wrap: wrap; }
+  #guide .practice { background: #fff7e0; border: 2px solid #f0c75e; }
+  #guide .measured { background: var(--panel); border: 1px solid var(--border); padding: 8px 16px; align-items: center; }
+  #guide .tag { font: 700 12px/1 Consolas, monospace; letter-spacing: .06em; padding: 6px 9px; border-radius: 6px; white-space: nowrap; }
+  #guide .practice .tag { background: #c97a00; color: #fff; }
+  #guide .measured .tag { background: var(--accent); color: #fff; }
+  #guide .gtext { flex: 1; min-width: 260px; }
+  #guide ol { margin: 6px 0 0; padding-left: 22px; display: grid; gap: 3px; font-size: 14px; }
+  #guide li.done { color: var(--green); }
+  #guide li.done::marker { content: "✓  "; }
+  .device { display: flex; align-items: center; gap: 14px; background: #1b2430; color: #fff; border-radius: 12px; padding: 12px 16px; flex-wrap: wrap; margin: 8px 0; }
+  .device .btn { width: 46px; height: 46px; border-radius: 50%; display: grid; place-items: center; font-weight: 700; background: #6b7a8f; }
+  .device .btn.r { background: var(--accent); }
+  .device .led { width: 18px; height: 18px; border-radius: 50%; background: #f5c542; box-shadow: 0 0 10px #f5c542; }
+  .device .dial { width: 40px; height: 40px; border-radius: 50%; border: 3px solid #9fb0c0; position: relative; }
+  .device .dial::after { content: ""; position: absolute; width: 3px; height: 15px; background: #fff; left: 50%; top: 3px; transform: translateX(-50%) rotate(35deg); transform-origin: 50% 15px; }
+  .devlegend { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; font-size: 14px; }
+  .devlegend b { white-space: nowrap; }
+  .dlg { position: relative; }
+  .dlg-x { position: absolute; top: 10px; right: 12px; border: none; background: none; font-size: 24px; line-height: 1; padding: 4px 9px; color: var(--muted); border-radius: 8px; }
+  .dlg-x:hover { background: var(--bg); color: var(--text); }
+  .dlg .actions .back { margin-right: auto; }
+  .stylebtns { display: inline-flex; gap: 6px; flex-wrap: wrap; margin-left: 4px; vertical-align: middle; }
+  .stylebtns button { padding: 2px 10px; font-size: 13px; }
+  .stylebtns button.sel { background: var(--accent); border-color: var(--accent); color: #fff; }
   #policy { margin-top: 8px; font: 12px Consolas, monospace; color: var(--muted); border-top: 1px dashed var(--border); padding-top: 6px; }
   .empty { color: var(--muted); font-size: 14px; padding: 8px 0; }
 
@@ -129,15 +171,19 @@
   <button id="btnSettings" class="small">Settings</button>
 </header>
 
+<div id="guide" class="hidden"></div>
+
 <main>
   <section class="card">
     <h2 id="taskTitle">–</h2>
     <p id="taskDesc"></p>
+    <div id="testsPreview" class="tests-preview"></div>
     <div id="editorWrap"><textarea id="code"></textarea></div>
     <div class="runbar">
       <button id="btnRun" class="primary">Run tests ▶</button>
       <span class="muted" style="font-size:13px">Ctrl+Enter</span>
       <span class="spacer"></span>
+      <button id="btnResetCode" class="small">Reset code</button>
       <button id="btnEnd" class="small">End task</button>
     </div>
     <div id="results" class="results"><div class="empty">Run your code to see the test results.</div></div>
@@ -148,15 +194,17 @@
     <div id="ladder" class="ladder"></div>
     <div id="offer" class="offer hidden"></div>
     <div id="hints" class="hints"></div>
-    <div class="controls">
+    <div class="controls" id="controls">
       <button id="btnReq" class="primary">Request<kbd>Alt+1</kbd></button>
       <button id="btnDefer">Defer<kbd>Alt+2</kbd></button>
       <button id="btnSilence">Silence<kbd>Alt+3</kbd></button>
     </div>
-    <div id="notice" role="status" aria-live="polite"></div>
+    <div id="deviceHint" class="hidden"></div>
+    <div id="notice" class="notice"></div>
     <div id="policy"></div>
   </section>
 </main>
+<div id="sr" class="sr-only" aria-live="polite" aria-atomic="true"></div>
 
 <!-- Session setup -->
 <dialog id="dlgSession">
@@ -179,10 +227,63 @@
   </div>
 </dialog>
 
+<!-- Welcome (study mode): what will happen, the device, consent reminder -->
+<dialog id="dlgWelcome">
+  <div class="dlg">
+    <button class="dlg-x" id="xWelcome" aria-label="Back to session setup" title="Back">×</button>
+    <h3>Welcome, and thank you for taking part</h3>
+    <p style="margin-top:0">You will fix small bugs in short Python programs. An AI tutor can help you. We are testing the <b>tool</b>, not you.</p>
+    <fieldset>
+      <legend>What happens</legend>
+      <ol style="margin:4px 0 0;padding-left:20px;display:grid;gap:4px">
+        <li><b>Practice</b> (about 4 minutes, <b>not measured</b>): you learn the screen, the device and the different ways the help can work, step by step.</li>
+        <li><b>3 tasks</b>, up to 10 minutes each. The AI help may work differently in each task.</li>
+        <li>After each task, a <b>short questionnaire</b> (about 1 minute).</li>
+      </ol>
+    </fieldset>
+    <fieldset>
+      <legend>The device</legend>
+      <div class="device" aria-hidden="true">
+        <span class="btn r">R</span><span class="btn">D</span><span class="btn">S</span><span class="led"></span><span class="dial"></span>
+      </div>
+      <div class="devlegend">
+        <b>R · Request</b><span>Get help. Press again for more specific help.</span>
+        <b>D · Defer</b><span>“Not now”: no help offers for 2 minutes.</span>
+        <b>S · Silence</b><span>Stop help offers until you press it again. Request still works.</span>
+        <b>Light + vibration</b><span>The tutor is offering help. You decide whether to take it.</span>
+        <b>Dial</b><span>How confident you feel right now (1 = not at all, 5 = completely). Change it any time.</span>
+      </div>
+      <p class="muted" style="font-size:13px;margin:8px 0 0">No device? The keys Alt+1 (Request), Alt+2 (Defer), Alt+3 (Silence) do the same.</p>
+    </fieldset>
+    <p class="muted" style="font-size:14px">Only your code and button presses are recorded, under an anonymous ID. You can stop at any time without giving a reason.</p>
+    <div class="actions"><button id="btnWelcomeBack" class="back">Back</button><button id="btnWelcomeGo" class="primary">Start the practice</button></div>
+  </div>
+</dialog>
+
+<!-- Practice finished -> measured tasks -->
+<dialog id="dlgTransition">
+  <div class="dlg">
+    <button class="dlg-x" id="xTrans" aria-label="Back to the practice" title="Back to the practice">×</button>
+    <h3>Practice finished</h3>
+    <p id="transSkipped" class="muted" style="margin-top:0"></p>
+    <p>Now the <b>3 real tasks</b> start. From here on your work is recorded for the study.</p>
+    <ul style="padding-left:20px;display:grid;gap:4px">
+      <li>Each task has up to <b>10 minutes</b>. It is fine not to finish.</li>
+      <li>The AI help may work <b>differently</b> in each task. Use it as much or as little as you like.</li>
+      <li>After each task you answer a short questionnaire.</li>
+    </ul>
+    <div class="actions"><button id="btnTransBack" class="back">Back to the practice</button><button id="btnTransGo" class="primary">I am ready for task 1</button></div>
+  </div>
+</dialog>
+
 <!-- Pre-task -->
 <dialog id="dlgTask">
   <div class="dlg">
+    <button class="dlg-x hidden" id="xPre" aria-label="Back" title="Back">×</button>
     <h3 id="preTitle"></h3>
+    <div id="preIntro" class="hidden">
+      <p style="margin:0"><b>PRACTICE · not measured.</b> A yellow guide at the top of the screen walks you through each step. Take your time.</p>
+    </div>
     <p id="preDesc"></p>
     <p id="preCond" class="muted"></p>
     <fieldset>
@@ -191,7 +292,7 @@
       <div class="scale" id="preConf"></div>
       <div class="q"><div class="ends"><span>1 = not at all</span><span>5 = completely</span></div></div>
     </fieldset>
-    <div class="actions"><button id="btnPreStart" class="primary" disabled>Start task (10 min)</button></div>
+    <div class="actions"><button id="btnPreBack" class="back hidden">Back</button><button id="btnPreStart" class="primary" disabled>Start task (10 min)</button></div>
   </div>
 </dialog>
 
@@ -213,6 +314,7 @@
       <legend>Workload (NASA-TLX)</legend>
       <div id="postTlx"></div>
     </fieldset>
+    <div id="postErr" role="alert"></div>
     <div class="actions"><button id="btnPostSubmit" class="primary">Submit and continue</button></div>
   </div>
 </dialog>
@@ -249,7 +351,8 @@
     <fieldset>
       <legend>ESP32 relay</legend>
       <div class="row"><label for="stRelay">Relay URL</label><input id="stRelay" placeholder="ws://localhost:8765"></div>
-      <div class="row"><label for="stPolicy">Researcher view</label><label><input id="stPolicy" type="checkbox"> show policy state under the hint panel</label></div>
+      <div class="row"><label for="stDevice">Device-first</label><label><input id="stDevice" type="checkbox"> hide on-screen help buttons while the ESP32 is connected (keyboard stays as backup)</label></div>
+      <div class="row"><label for="stPolicy">Researcher view</label><label><input id="stPolicy" type="checkbox"> show policy state under the hint panel (demo mode only, never shown to participants)</label></div>
     </fieldset>
     <fieldset>
       <legend>Log</legend>
@@ -266,30 +369,123 @@
 "use strict";
 /* ============================== content ============================== */
 const TASKS = [
-  { id: "T1", title: "Average of a list",
-    desc: "average(nums) should return the mean (average) of the numbers in the list nums.",
-    code: "def average(nums):\n    total = 0\n    for i in range(1, len(nums)):\n        total += nums[i]\n    return total / len(nums)\n",
-    tests: [{ call: "average([4, 8, 6])", expected: "6.0" }, { call: "average([10])", expected: "10.0" }, { call: "average([1, 2, 3, 4])", expected: "2.5" }] },
-  { id: "T2", title: "Count the vowels",
-    desc: "count_vowels(text) should return how many vowels (a, e, i, o, u, upper or lower case) are in text.",
-    code: "def count_vowels(text):\n    count = 0\n    for ch in text.lower():\n        if ch in \"aeiou\":\n            count += 1\n        return count\n",
-    tests: [{ call: "count_vowels(\"banana\")", expected: "3" }, { call: "count_vowels(\"Ada\")", expected: "2" }, { call: "count_vowels(\"\")", expected: "0" }] },
-  { id: "T3", title: "Largest number",
-    desc: "find_max(numbers) should return the largest number in a non-empty list.",
-    code: "def find_max(numbers):\n    largest = 0\n    for n in numbers:\n        if n > largest:\n            largest = n\n    return largest\n",
-    tests: [{ call: "find_max([3, 9, 2])", expected: "9" }, { call: "find_max([-5, -2, -8])", expected: "-2" }, { call: "find_max([7])", expected: "7" }] },
-  { id: "T4", title: "Palindrome check (spare)",
-    desc: "is_palindrome(word) should return True if the word reads the same backwards, ignoring upper/lower case.",
-    code: "def is_palindrome(word):\n    word = word.lower()\n    return word == word.reverse()\n",
-    tests: [{ call: "is_palindrome(\"Level\")", expected: "True" }, { call: "is_palindrome(\"python\")", expected: "False" }, { call: "is_palindrome(\"a\")", expected: "True" }] },
+  // Design rules for the tasks: one root cause each (so the L1-L4 ladder is meaningful), no crash
+  // that names the fix, some tests pass so the learner must reason about *which* case breaks,
+  // IF100/CS201 level, solvable in 10 minutes. T1-T3 are meant to be of similar difficulty.
+  { id: "T0", title: "Practice: initials", practice: true,
+    desc: "initials(full_name) should return the first letter of every name in capitals, each followed by a dot. Example: initials(\"ada lovelace\") returns \"A.L.\"",
+    code: [
+      "def initials(full_name):",
+      "    result = \"\"",
+      "    for part in full_name.split(\" \"):",
+      "        result = part[0].upper() + \".\"",
+      "    return result",
+    ].join("\n") + "\n",
+    tests: [{ call: "initials(\"ada lovelace\")", expected: "\"A.L.\"" }, { call: "initials(\"Grace Brewster Hopper\")", expected: "\"G.B.H.\"" }, { call: "initials(\"Linus\")", expected: "\"L.\"" }],
+    // Pre-written help so the practice works the same for everyone and never depends on the LLM
+    canned: {
+      1: "Look at the line inside the loop in initials() that gives `result` its new value.",
+      2: "When you build a result step by step, each step has to add to what is already there. Assigning with `=` replaces the old value instead of keeping it.",
+      3: "Inside the loop, `result = ...` throws away the initials collected so far, so only the last one survives. The new initial has to be added to `result` instead.",
+      4: "```python\ndef initials(full_name):\n    result = \"\"\n    for part in full_name.split(\" \"):\n        result += part[0].upper() + \".\"\n    return result\n```\nWith `+=` each new initial is appended to the ones already in `result`, so all of them are kept.",
+    } },
+  { id: "T1", title: "Longest rising run",
+    desc: "longest_rise(nums) should return the length of the longest run of numbers that keep getting bigger, one after another. Example: in [1, 2, 9, 4, 5] the longest run is 1, 2, 9, so the answer is 3. An empty list gives 0.",
+    code: [
+      "def longest_rise(nums):",
+      "    if not nums:",
+      "        return 0",
+      "    best = 1",
+      "    current = 1",
+      "    for i in range(1, len(nums)):",
+      "        if nums[i] > nums[i - 1]:",
+      "            current += 1",
+      "        else:",
+      "            best = max(best, current)",
+      "            current = 1",
+      "    return best",
+    ].join("\n") + "\n",
+    tests: [{ call: "longest_rise([1, 2, 9, 4, 5])", expected: "3" }, { call: "longest_rise([5, 1, 2, 3])", expected: "3" }, { call: "longest_rise([4, 6, 8, 10])", expected: "4" }, { call: "longest_rise([])", expected: "0" }] },
+  { id: "T2", title: "Most common word",
+    desc: "most_common_word(text) should return the word that appears most often, ignoring upper/lower case and the punctuation marks . , ! ? at the end of words. If there is a tie, return the word that appears first.",
+    code: [
+      "def most_common_word(text):",
+      "    counts = {}",
+      "    for word in text.lower().split():",
+      "        word.strip(\".,!?\")",
+      "        if word in counts:",
+      "            counts[word] += 1",
+      "        else:",
+      "            counts[word] = 1",
+      "    best = None",
+      "    for word in counts:",
+      "        if best is None or counts[word] > counts[best]:",
+      "            best = word",
+      "    return best",
+    ].join("\n") + "\n",
+    tests: [{ call: "most_common_word(\"a b a\")", expected: "\"a\"" }, { call: "most_common_word(\"Yes! yes, YES no no\")", expected: "\"yes\"" }, { call: "most_common_word(\"Hello, world. Hello!\")", expected: "\"hello\"" }] },
+  { id: "T3", title: "Average of valid scores",
+    desc: "clean_average(scores) should return the average of the valid scores. A valid score is between 0 and 100; all other scores are ignored. If no score is valid, return 0.",
+    code: [
+      "def clean_average(scores):",
+      "    for s in scores:",
+      "        if s < 0 or s > 100:",
+      "            scores.remove(s)",
+      "    if len(scores) == 0:",
+      "        return 0",
+      "    return sum(scores) / len(scores)",
+    ].join("\n") + "\n",
+    tests: [{ call: "clean_average([80, -5, 90])", expected: "85.0" }, { call: "clean_average([70, 150, 200, 90])", expected: "80.0" }, { call: "clean_average([-1, -2])", expected: "0" }] },
+  { id: "T4", title: "Second largest (spare)",
+    desc: "second_largest(nums) should return the second largest different value in the list. Example: second_largest([5, 5, 3]) returns 3, because 5 only counts once.",
+    code: [
+      "def second_largest(nums):",
+      "    first = None",
+      "    second = None",
+      "    for n in nums:",
+      "        if first is None or n > first:",
+      "            second = first",
+      "            first = n",
+      "        elif second is None or n > second:",
+      "            second = n",
+      "    return second",
+    ].join("\n") + "\n",
+    tests: [{ call: "second_largest([3, 9, 5])", expected: "5" }, { call: "second_largest([5, 5, 3])", expected: "3" }, { call: "second_largest([1, 4, 4, 2])", expected: "2" }] },
 ];
 const STUDY_TASKS = ["T1", "T2", "T3"];
 const ORDERS = [["A","B","C"], ["A","C","B"], ["B","A","C"], ["B","C","A"], ["C","A","B"], ["C","B","A"]];
+// note = neutral instruction shown to participants (no condition names, to avoid demand effects)
+// demoNote = descriptive text for the free demo / researchers
 const CONDS = {
-  A: { name: "Full answer", note: "The AI shows the complete fix when you ask.", req: "Show answer" },
-  B: { name: "Hint only", note: "The AI gives one conceptual hint when you ask.", req: "Get hint" },
-  C: { name: "Calibrated", note: "Hints get more specific step by step. You control them.", req: "Request next hint" },
+  A: { name: "Full answer", note: "Press Request when you want help.", demoNote: "The AI shows the complete fix when you ask." },
+  B: { name: "Hint only", note: "Press Request when you want help.", demoNote: "The AI gives one conceptual hint when you ask." },
+  C: { name: "Calibrated", note: "Press Request when you want help. The tutor may also offer help; you can defer or silence offers.", demoNote: "Hints get more specific step by step. You control them." },
+  P: { name: "Practice", note: "Practice: try Request, Defer and Silence. The help here is pre-written.", demoNote: "Practice mode with pre-written hints." },
 };
+const OFFER_REASONS = {
+  low_confidence_first_fail: "Your first run did not pass and you said you were not very confident.",
+  same_result_3_runs: "You got the same test result 3 runs in a row.",
+  practice_demo: "Practice: this offer shows you how offers look and feel.",
+};
+// Guided practice: each step is ticked when the participant actually does it
+const PRACTICE_STEPS = [
+  ["run", "Press <b>Run tests</b> (Ctrl+Enter) to check the code. The tests fail on purpose."],
+  ["defer", "The device vibrates and the light turns yellow: the tutor offers help. Press <b>Defer</b> (D / Alt+2) to say “not now”."],
+  ["request", "Press <b>Request</b> (R / Alt+1) to get a hint. Press it again for a more specific one."],
+  ["silence", "Press <b>Silence</b> (S / Alt+3), then press it again to turn offers back on."],
+  ["styles", "In the real tasks the help can work in different ways. Switch the help style and press <b>Request</b> once in each: {STYLES}"],
+  ["solved", "Fix the code and run the tests until they all pass."],
+];
+// Practice shows all three help styles with neutral names, in the same order for everyone,
+// so no participant meets an unfamiliar style for the first time in a measured task.
+const PRACTICE_STYLES = [["P", "Style 1"], ["A", "Style 2"], ["B", "Style 3"]];
+const PRACTICE_STYLE_NOTES = {
+  P: "Help style 1: each press gives more specific help, and the tutor may offer help.",
+  A: "Help style 2: one press shows the complete fix.",
+  B: "Help style 3: one press shows one hint, and there is no more help after it.",
+};
+const isLadder = () => S.cond === "C" || S.cond === "P";
+const isStudy = () => S.session.mode === "study";
 const LEVEL_NAMES = { 1: "Where to look", 2: "Which concept", 3: "Targeted hint", 4: "Full fix" };
 const TASK_SECONDS = 600;
 const DEFER_MS = 120000;
@@ -378,7 +574,7 @@ const store = {
   set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch { /* private mode: keep in memory */ } },
 };
 const defaultRelay = () => location.protocol.startsWith("http") ? `ws://${location.host}` : "ws://localhost:8765";
-const DEFAULTS = { apiType: "ollama", endpoint: "http://localhost:11434", model: "", apiKey: "", reasoning: "low", temperature: 0.3, lang: "English", relay: defaultRelay(), showPolicy: true };
+const DEFAULTS = { apiType: "ollama", endpoint: "http://localhost:11434", model: "", apiKey: "", reasoning: "low", temperature: 0.3, lang: "English", relay: defaultRelay(), showPolicy: true, deviceFirst: true };
 
 /* ============================== state ============================== */
 const S = {
@@ -604,8 +800,12 @@ function buildMessages(level) {
 }
 
 function md(src) {
-  return src.split("```").map((part, i) => {
-    if (i % 2 === 1) return `<pre><code>${esc(part.replace(/^[a-zA-Z]*\n/, ""))}</code></pre>`;
+  const parts = src.split("```");
+  return parts.map((part, i) => {
+    if (i % 2 === 1) return `<pre><code>${esc(part.replace(/^[a-zA-Z]*\n/, "").replace(/\n+$/, ""))}</code></pre>`;
+    // trim blank lines next to code blocks (the <pre> already has its own spacing)
+    if (i > 0) part = part.replace(/^\s*\n/, "");
+    if (i < parts.length - 1) part = part.replace(/\n\s*$/, "");
     return esc(part)
       .replace(/`([^`\n]+)`/g, "<code>$1</code>")
       .replace(/\*\*([^*\n]+)\*\*/g, "<b>$1</b>")
@@ -615,30 +815,47 @@ function md(src) {
 }
 
 async function generateHint(level) {
-  if (!S.llmOk) { notice("The LLM is not reachable. Open Settings and check the endpoint.", true); return; }
+  const canned = S.task.canned;
+  if (!canned && !S.llmOk) { notice("Help is not available right now. Please tell the researcher.", "err"); log("hint_unavailable", { level }); return; }
   const h = { id: Date.now(), level, text: "", thinking: true, status: "streaming", t0: performance.now(), conf: null, error: null };
   S.hints.push(h); S.generating = true;
   renderHints(); renderControls();
-  log("hint_request", { level, model: S.settings.model });
-  const messages = buildMessages(level);
-  const go = () => streamChat(messages,
-    (tok) => { h.thinking = false; h.text += tok; renderHint(h); },
-    () => { if (!h.text) { h.thinking = true; renderHint(h); } });
-  try {
-    await go();
-  } catch (e) {
-    if (!S.noThink && /think|reason/i.test(e.message)) {
-      S.noThink = true; h.text = "";
-      try { await go(); } catch (e2) { h.error = e2.message; }
-    } else { h.error = e.message; }
+  log("hint_request", { level, model: canned ? "canned" : S.settings.model });
+  if (canned) {
+    // Pre-written practice help, streamed so it looks the same as live help
+    h.thinking = false;
+    for (const chunk of (canned[level] || "").match(/[\s\S]{1,6}/g) || []) {
+      h.text += chunk; renderHint(h);
+      await new Promise((r) => setTimeout(r, 20));
+    }
+  } else {
+    const messages = buildMessages(level);
+    const go = () => streamChat(messages,
+      (tok) => { h.thinking = false; h.text += tok; renderHint(h); },
+      () => { if (!h.text) { h.thinking = true; renderHint(h); } });
+    try {
+      await go();
+    } catch (e) {
+      if (!S.noThink && /think|reason/i.test(e.message)) {
+        S.noThink = true; h.text = "";
+        try { await go(); } catch (e2) { h.error = e2.message; }
+      } else { h.error = e.message; }
+    }
   }
   h.thinking = false;
   h.ms = Math.round(performance.now() - h.t0);
   if (!h.error && !h.text.trim()) h.error = "The model returned an empty answer. Try again or choose another model.";
   h.status = h.error ? "error" : "done";
   S.generating = false;
-  log("hint_shown", { level, model: S.settings.model, ms: h.ms, text: h.text, error: h.error });
-  if (h.status === "done") sendDevice({ cmd: "blink", led: "green" });
+  log("hint_shown", { level, model: canned ? "canned" : S.settings.model, ms: h.ms, text: h.text, error: h.error });
+  if (h.status === "done") {
+    sendDevice({ cmd: "blink", led: "green" }); announce(`${hintLabel(h)}: ${h.text.replace(/```[a-z]*/g, "")}`);
+    if (S.task.practice) {
+      S.practiceSteps["style_" + S.cond] = true;
+      if (PRACTICE_STYLES.every(([c]) => S.practiceSteps["style_" + c])) markStep("styles"); else renderGuide();
+    }
+  }
+  else announce("Help is not available right now. Please tell the researcher.");
   renderHint(h); renderControls(); renderPolicy();
 }
 
@@ -652,18 +869,50 @@ function connectRelay() {
   ws.onmessage = (e) => {
     let m; try { m = JSON.parse(e.data); } catch { return; }
     if (m.source !== "esp32") return;
-    if (!S.deviceSeen) { S.deviceSeen = true; setChip("chipDev", "ESP32 ✓", "ok"); }
+    if (!S.deviceSeen) { S.deviceSeen = true; setChip("chipDev", "ESP32 ✓", "ok"); renderControls(); }
     if (["request", "defer", "silence"].includes(m.event)) act(m.event, "esp32");
+    else if (m.event === "confidence") setConfidenceFromDevice(m.value);
   };
 }
 function sendDevice(obj) { if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ source: "app", ...obj })); }
+// Physical confidence control (planned potentiometer on the ESP32): {"event":"confidence","value":1..5}
+function setConfidenceFromDevice(value) {
+  const v = Math.max(1, Math.min(5, parseInt(value, 10) || 0));
+  if (!v) return;
+  if ($("dlgTask").open) {           // before the task: answer the start question
+    const btn = $("preConf").children[v - 1];
+    if (btn) btn.click();
+    log("confidence", { value: v, source: "esp32", when: "pre_task" });
+    return;
+  }
+  S.confidence = v;
+  log("confidence", { value: v, source: "esp32" });
+  if (S.active) notice(`Confidence set to ${v} on the device.`);
+  renderPolicy();
+}
 
 /* ============================== calibration policy ============================== */
 function offersBlocked() {
   if (S.silenced) return "silenced";
   if (Date.now() < S.deferUntil) return "deferred";
-  if (S.confidence !== null && S.confidence >= 4) return "high_confidence";
+  // practice always shows one offer, whatever the confidence, so everyone learns what an offer is
+  if (S.confidence !== null && S.confidence >= 4 && !(S.task && S.task.practice)) return "high_confidence";
   return null;
+}
+function setPracticeStyle(c) {
+  if (!S.task || !S.task.practice || S.generating || S.cond === c) return;
+  S.cond = c;
+  Object.assign(S, { hints: [], level: 0, offer: null, runsSinceL3: 0, silenced: false, deferUntil: 0 });
+  sendDevice({ cmd: "led_off" });
+  log("practice_style", { style: c });
+  notice(PRACTICE_STYLE_NOTES[c] + " Press Request to try it.");
+  renderAll();
+}
+function markStep(k) {
+  if (!S.task || !S.task.practice || S.practiceSteps[k]) return;
+  S.practiceSteps[k] = true;
+  log("practice_step", { step: k });
+  renderGuide();
 }
 function offer(level, rule) {
   const blocked = offersBlocked();
@@ -671,6 +920,7 @@ function offer(level, rule) {
   S.offer = { level, rule };
   log("offer", { level, rule });
   sendDevice({ cmd: "blink", led: "yellow", vibrate: 300 });
+  announce(`A level ${level} hint is available. ${OFFER_REASONS[rule] || ""} Press Request to see it, or Defer.`);
   renderAll();
 }
 function policyAfterRun(r, passed, total) {
@@ -686,6 +936,7 @@ function policyAfterRun(r, passed, total) {
   const sig = r.error ? `${r.error.type}@${r.error.line}` : r.tests.filter((t) => !t.passed).map((t) => `${t.call}=${t.got}`).join("|");
   S.streak = sig === S.lastSig ? S.streak + 1 : 1;
   S.lastSig = sig;
+  if (S.task.practice && S.level === 0 && S.failedRuns === 1) { offer(1, "practice_demo"); return; }
   if (S.confidence !== null && S.confidence <= 2 && S.level === 0 && S.failedRuns === 1) { offer(1, "low_confidence_first_fail"); return; }
   if (S.streak >= 3 && S.level < 4) {
     const next = S.level + 1;
@@ -706,41 +957,47 @@ function act(ev, source) {
 function onRequest() {
   if (S.generating) { notice("Still writing the current hint…"); return; }
   if (S.cond === "A") {
-    if (S.hints.some((h) => h.status === "done")) { notice("The full answer is already shown."); return; }
+    if (S.hints.some((h) => h.status === "done")) { notice("The answer is already shown above."); return; }
     S.hints = S.hints.filter((h) => h.status === "done");
     generateHint(4); return;
   }
   if (S.cond === "B") {
-    if (S.hints.some((h) => h.status === "done")) { notice("In this version there is one hint only."); return; }
+    if (S.hints.some((h) => h.status === "done")) { notice("There is no more help in this task. The hint above is the only one."); return; }
     S.hints = S.hints.filter((h) => h.status === "done");
     generateHint(2); return;
   }
   const next = S.level + 1;
-  if (next > 4) { notice("All hint levels have been shown."); return; }
+  if (next > 4) { notice("All help levels have been shown."); return; }
   if (next === 4 && S.runsSinceL3 < 1) {
     log("policy", { rule: "l4_locked" });
-    notice("Run your code once more after the L3 hint. Then the full fix unlocks.");
+    sendDevice({ cmd: "led_off" });
+    notice("🔒 The full fix (L4) unlocks after you run your code once more. Try a change based on the L3 hint, press Run tests, then press Request again.");
+    renderLadder();
     return;
   }
   S.level = next; S.offer = null;
   if (next === 3) S.runsSinceL3 = 0;
   renderLadder(); renderOffer();
+  markStep("request");
   generateHint(next);
 }
 function onDefer() {
-  if (S.cond !== "C") { notice("Defer is not used in this version."); return; }
+  if (!isLadder()) { notice("Defer is not used in this task."); return; }
   S.deferUntil = Date.now() + DEFER_MS; S.offer = null;
   sendDevice({ cmd: "led_off" });
   log("policy", { rule: "defer", until: new Date(S.deferUntil).toISOString() });
   notice("Okay, no hint offers for 2 minutes. You can still press Request.");
+  markStep("defer");
   renderAll();
 }
 function onSilence() {
-  if (S.cond !== "C") { notice("Silence is not used in this version."); return; }
+  if (!isLadder()) { notice("Silence is not used in this task."); return; }
   S.silenced = !S.silenced; S.offer = null;
   sendDevice(S.silenced ? { cmd: "led_on", led: "blue" } : { cmd: "led_off" });
   log("policy", { rule: S.silenced ? "silence_on" : "silence_off" });
   notice(S.silenced ? "Silenced: no hint offers until you press Silence again. Request still works." : "Hint offers are back on.");
+  if (S.silenced) S.practiceSilenced = true;
+  else if (S.practiceSilenced) markStep("silence");
   renderAll();
 }
 
@@ -756,43 +1013,133 @@ async function runCode() {
   S.runs++; S.lastRun = r;
   log("run", { n: S.runs, passed, total, error: r.error, code, tests: r.tests.map((t) => ({ call: t.call, got: t.got, passed: t.passed })) });
   renderResults(r, passed, total);
-  if (!r.error && passed === total) { finishTask("solved"); return; }
-  if (S.cond === "C") policyAfterRun(r, passed, total);
+  markStep("run");
+  if (!r.error && passed === total) {
+    if (S.task.practice) {
+      markStep("solved");
+      const left = PRACTICE_STEPS.filter(([k]) => !S.practiceSteps[k]);
+      if (left.length) {
+        notice("All tests pass! Try the steps that are not ticked yet in the yellow guide, or press “Continue to the real tasks”.");
+        renderAll();
+        return;
+      }
+    }
+    finishTask("solved");
+    return;
+  }
+  if (isLadder()) policyAfterRun(r, passed, total);
   renderAll();
+}
+function resetCode() {
+  if (!S.active) return;
+  if (!confirm("Reset the code to the original version? Your changes will be lost.")) return;
+  log("code_reset", { code_before: editor.getValue() });
+  editor.setValue(S.task.code); editor.focus();
+  notice("Code reset to the original version.");
 }
 
 /* ============================== task flow ============================== */
 function resetTaskState() {
   Object.assign(S, { runs: 0, lastRun: null, failedRuns: 0, lastSig: null, streak: 0, bestPassed: 0, firstRunDone: false,
-    level: 0, runsSinceL3: 0, hints: [], confidence: null, silenced: false, deferUntil: 0, offer: null, generating: false, active: false });
+    level: 0, runsSinceL3: 0, hints: [], confidence: null, silenced: false, deferUntil: 0, offer: null, generating: false, active: false,
+    practiceSteps: {}, practiceSilenced: false });
   clearInterval(S.timerId);
 }
-function prepareTask(taskId, cond) {
+function prepareTask(taskId, cond, opts = {}) {
   resetTaskState();
   S.task = taskById(taskId); S.cond = cond;
+  // coming back to the practice keeps the steps already ticked
+  if (S.task.practice && isStudy() && S.session.practiceSteps) S.practiceSteps = { ...S.session.practiceSteps };
   editor.setValue(S.task.code); editor.clearHistory(); setEditable(false);
   $("taskTitle").textContent = S.task.title;
   $("taskDesc").textContent = S.task.desc;
+  $("testsPreview").innerHTML = "<span>Tests:</span>" + S.task.tests.map((t) => `<code>${esc(t.call)} → ${esc(t.expected)}</code>`).join("");
   $("results").innerHTML = '<div class="empty">Run your code to see the test results.</div>';
   $("timer").textContent = fmtTime(TASK_SECONDS); $("timer").classList.remove("low");
   sendDevice({ cmd: "led_off" });
   notice("");
   renderAll();
-  const k = S.session.mode === "study" ? `Task ${S.session.step + 1} of ${S.session.plan.length}: ` : "";
+  const practice = !!S.task.practice;
+  const k = isStudy() && !practice ? `Task ${stepInfo().n} of ${stepInfo().total}: ` : "";
   $("preTitle").textContent = k + S.task.title;
+  $("preIntro").classList.toggle("hidden", !practice);
   $("preDesc").textContent = S.task.desc;
-  $("preCond").textContent = "AI help in this task: " + CONDS[cond].note;
+  $("preCond").textContent = practice ? "" : (isStudy() ? "How to get help: " + CONDS[cond].note : "AI help in this task: " + CONDS[cond].demoNote);
   buildScale($("preConf"), 5, null, (v) => { S.confidence = v; $("btnPreStart").disabled = false; });
   $("btnPreStart").disabled = true;
+  $("btnPreStart").textContent = practice ? "Start the practice" : "Start task (10 min)";
+  const canBack = !!preBackTarget();
+  $("btnPreBack").classList.toggle("hidden", !canBack);
+  $("xPre").classList.toggle("hidden", !canBack);
+  if (opts.resume) { S.confidence = S.session.practiceConfidence ?? 3; startTask(); return; }
   $("dlgTask").showModal();
 }
 function startTask() {
-  $("dlgTask").close();
+  if ($("dlgTask").open) $("dlgTask").close();
   S.active = true; S.t0 = Date.now();
   setEditable(true); editor.focus();
-  log("task_start", { confidence: S.confidence, order_step: S.session.step });
-  S.timerId = setInterval(tick, 1000); tick();
+  log("task_start", { confidence: S.confidence, order_step: S.session.step, practice: !!S.task.practice });
+  if (S.task.practice) {
+    S.session.practiceConfidence = S.confidence;
+    $("timer").textContent = "practice";   // no time pressure in the practice
+  } else {
+    S.timerId = setInterval(tick, 1000); tick();
+  }
   renderAll();
+}
+
+/* ---- navigation: every pre-task dialog has a way back ---- */
+function preBackTarget() {
+  if (!isStudy()) return null;
+  const cur = S.session.plan[S.session.step];
+  if (!cur) return null;
+  if (cur.practice) return "welcome";
+  const prev = S.session.plan[S.session.step - 1];
+  return prev && prev.practice ? "transition" : null;   // after a measured task there is no going back
+}
+function backFromWelcome() {
+  $("dlgWelcome").close();
+  log("nav_back", { from: "welcome", to: "session" });
+  renderPlanPreview(); $("dlgSession").showModal();
+}
+function backFromPreTask() {
+  const to = preBackTarget();
+  if (!to) return;
+  $("dlgTask").close();
+  log("nav_back", { from: "pre_task", to });
+  if (to === "welcome") $("dlgWelcome").showModal();
+  else { S.transFromPre = true; openTransition(); }
+}
+function openTransition() {
+  const steps = S.session.practiceSteps || {};
+  const left = PRACTICE_STEPS.filter(([k]) => !steps[k]).length;
+  $("transSkipped").textContent = left
+    ? `You tried ${PRACTICE_STEPS.length - left} of ${PRACTICE_STEPS.length} practice steps. That is fine; you can go back and try the rest.`
+    : "You tried every practice step. Well done.";
+  $("dlgTransition").showModal();
+}
+function transReady() {
+  $("dlgTransition").close();
+  if (S.transFromPre) { S.transFromPre = false; $("dlgTask").showModal(); }   // task 1 is already prepared
+  else advanceSession();
+}
+function backToPractice() {
+  $("dlgTransition").close();
+  log("nav_back", { from: "transition", to: "practice" });
+  if (S.transFromPre) {
+    // task 1 was already prepared: rebuild the practice with the ticked steps kept
+    S.transFromPre = false;
+    S.session.step = S.session.plan.findIndex((p) => p.practice);
+    const p = S.session.plan[S.session.step];
+    prepareTask(p.task, p.cond, { resume: true });
+  } else {
+    // the practice state is still in memory: just reopen it
+    S.active = true; setEditable(true); editor.focus();
+    $("timer").textContent = "practice";
+    log("practice_resumed", {});
+    renderAll();
+  }
+  notice("Back in the practice. Press “Continue to the real tasks” when you are ready.");
 }
 function tick() {
   const left = TASK_SECONDS - (Date.now() - S.t0) / 1000;
@@ -810,7 +1157,12 @@ function finishTask(outcome) {
   S.offer = null;
   renderAll();
   const msg = { solved: `Solved in ${fmtTime(seconds)}.`, timeout: "Time is up (10 minutes).", ended: `Task ended after ${fmtTime(seconds)}.` }[outcome];
-  if (S.session.mode === "study") {
+  if (isStudy() && S.task.practice) {
+    // Practice is not measured: no questionnaire; a clear hand-over to the measured tasks
+    S.session.practiceSteps = { ...S.practiceSteps };
+    S.transFromPre = false;
+    openTransition();
+  } else if (isStudy()) {
     $("postOutcome").textContent = msg;
     openPost();
   } else {
@@ -826,25 +1178,43 @@ const TLX_ITEMS = [
   ["Effort", "How hard did you have to work to reach your level of performance?", "Very low", "Very high"],
   ["Frustration", "How insecure, discouraged, irritated or stressed were you?", "Very low", "Very high"],
 ];
-const post = { aut: [] };
+const post = { aut: [], tlxTouched: [] };
 function openPost() {
   $("postExplain").value = "";
+  $("postErr").textContent = "";
   post.aut = AUT_ITEMS.map(() => null);
-  $("postAut").innerHTML = AUT_ITEMS.map((q, i) => `<div class="q"><div>${esc(q)}</div><div class="scale" id="aut${i}"></div></div>`).join("");
-  AUT_ITEMS.forEach((_, i) => buildScale($("aut" + i), 7, null, (v) => { post.aut[i] = v; }));
+  post.tlxTouched = TLX_ITEMS.map(() => false);
+  $("postAut").innerHTML = AUT_ITEMS.map((q, i) => `<div class="q" id="autq${i}"><div>${esc(q)}</div><div class="scale" id="aut${i}"></div></div>`).join("");
+  AUT_ITEMS.forEach((_, i) => buildScale($("aut" + i), 7, null, (v) => { post.aut[i] = v; $("autq" + i).classList.remove("missing"); }));
+  // Sliders start unset: a value is only recorded after the participant moves the slider
   $("postTlx").innerHTML = TLX_ITEMS.map(([n, q, lo, hi], i) =>
-    `<div class="q"><div><b>${n}</b> · ${esc(q)} <span class="muted" id="tlxv${i}">50</span></div>
-     <input type="range" min="0" max="100" step="5" value="50" id="tlx${i}" aria-label="${n}">
+    `<div class="q" id="tlxq${i}"><div><b>${n}</b> · ${esc(q)} <span class="muted" id="tlxv${i}">(not set)</span></div>
+     <input type="range" min="0" max="100" step="5" value="50" id="tlx${i}" aria-label="${n}" style="opacity:.45">
      <div class="ends"><span>${lo}</span><span>${hi}</span></div></div>`).join("");
-  TLX_ITEMS.forEach((_, i) => { $("tlx" + i).oninput = (e) => { $("tlxv" + i).textContent = e.target.value; }; });
+  TLX_ITEMS.forEach((_, i) => {
+    const mark = (e) => { post.tlxTouched[i] = true; $("tlxv" + i).textContent = e.target.value; e.target.style.opacity = 1; $("tlxq" + i).classList.remove("missing"); };
+    $("tlx" + i).addEventListener("input", mark);
+    $("tlx" + i).addEventListener("change", mark);
+  });
   $("dlgPost").showModal();
 }
 function submitPost() {
-  if (post.aut.some((v) => v === null)) { alert("Please answer the three autonomy questions."); return; }
+  const missing = [];
+  const expl = $("postExplain").value.trim();
+  $("postExplain").classList.toggle("missing", !expl);
+  if (!expl) missing.push("the explanation (write \"I don't know\" if you are not sure)");
+  post.aut.forEach((v, i) => { $("autq" + i).classList.toggle("missing", v === null); });
+  if (post.aut.some((v) => v === null)) missing.push("all three agreement questions");
+  post.tlxTouched.forEach((t, i) => { $("tlxq" + i).classList.toggle("missing", !t); });
+  if (post.tlxTouched.some((t) => !t)) missing.push("all six workload sliders (move each one, even if you keep it in the middle)");
+  if (missing.length) { $("postErr").textContent = "Please answer " + missing.join("; ") + "."; return; }
   const tlx = {}; TLX_ITEMS.forEach(([n], i) => { tlx[n] = +$("tlx" + i).value; });
-  log("questionnaire", { explanation: $("postExplain").value.trim(), autonomy: post.aut, tlx_raw: tlx,
+  log("questionnaire", { explanation: expl, autonomy: post.aut, tlx_raw: tlx,
     tlx_mean: Math.round(Object.values(tlx).reduce((a, b) => a + b, 0) / 6 * 10) / 10, outcome: S.lastOutcome });
   $("dlgPost").close();
+  advanceSession();
+}
+function advanceSession() {
   S.session.step++;
   if (S.session.step < S.session.plan.length) {
     const p = S.session.plan[S.session.step]; prepareTask(p.task, p.cond);
@@ -853,18 +1223,23 @@ function submitPost() {
     $("dlgDone").showModal();
   }
 }
+function stepInfo() {
+  const real = S.session.plan.filter((p) => !p.practice);
+  const n = S.session.plan.slice(0, S.session.step + 1).filter((p) => !p.practice).length;
+  return { n, total: real.length, practice: !!(S.session.plan[S.session.step] || {}).practice };
+}
 
 /* ============================== session ============================== */
 function planFor(pid) {
   const n = parseInt(String(pid).replace(/\D/g, ""), 10) || 1;
   const order = ORDERS[(n - 1) % ORDERS.length];
-  return STUDY_TASKS.map((task, i) => ({ task, cond: order[i] }));
+  return [{ task: "T0", cond: "P", practice: true }, ...STUDY_TASKS.map((task, i) => ({ task, cond: order[i] }))];
 }
 function renderPlanPreview() {
   const mode = document.querySelector('input[name=mode]:checked').value;
   const pid = $("inPid").value.trim() || "P01";
   $("planPreview").innerHTML = mode === "study"
-    ? "Plan: " + planFor(pid).map((p, i) => `${i + 1}) ${p.task} · ${p.cond} ${CONDS[p.cond].name}`).join("&nbsp;&nbsp; ")
+    ? "Researcher view, do not show to the participant.<br>Plan: " + planFor(pid).map((p, i) => p.practice ? "0) practice" : `${i}) ${p.task} · ${p.cond} ${CONDS[p.cond].name}`).join("&nbsp;&nbsp; ")
     : "Free demo: choose any task and condition from the top bar. No questionnaires.";
 }
 function renderSessLLM() {
@@ -880,12 +1255,24 @@ async function startSession() {
   await S.llmCheck; // log the model that will actually be used, not an empty one
   log("session_start", { plan: S.session.plan, model: S.settings.model, api: S.settings.apiType, llm_ok: S.llmOk });
   $("demoPick").classList.toggle("hidden", mode !== "demo");
-  if (mode === "study") prepareTask(S.session.plan[0].task, S.session.plan[0].cond);
+  if (mode === "study") $("dlgWelcome").showModal();
   else prepareTask($("selTask").value, $("selCond").value);
 }
 
 /* ============================== rendering ============================== */
-function notice(text, isErr) { const n = $("notice"); n.textContent = text; n.style.color = isErr ? "var(--red)" : "var(--accent)"; }
+function notice(text, kind) {
+  const n = $("notice");
+  n.textContent = text;
+  n.className = "notice" + (text ? " " + (kind === true || kind === "err" ? "err" : "info") : "");
+  if (text) announce(text);
+}
+// Screen-reader announcement (one polite live region, so streaming tokens are not read out one by one)
+function announce(text) { const el = $("sr"); el.textContent = ""; setTimeout(() => { el.textContent = text; }, 60); }
+function hintLabel(h) {
+  if (S.cond === "A") return "Answer";
+  if (S.cond === "B") return "Hint";
+  return `L${h.level} · ${LEVEL_NAMES[h.level]}`;
+}
 function buildScale(el, n, sel, onPick) {
   el.innerHTML = "";
   for (let v = 1; v <= n; v++) {
@@ -896,35 +1283,49 @@ function buildScale(el, n, sel, onPick) {
 }
 function renderHeader() {
   const c = CONDS[S.cond];
-  $("condBadge").textContent = `${S.cond} · ${c.name}`; $("condBadge").className = "badge " + S.cond;
-  $("taskLabel").textContent = S.task ? `${S.task.id} · ${S.session.pid}${S.session.mode === "study" ? ` · task ${S.session.step + 1}/${S.session.plan.length}` : " · demo"}` : "";
-  $("condNote").textContent = c.note;
+  // In study mode the condition is never named on screen (avoids demand characteristics)
+  $("condBadge").classList.toggle("hidden", isStudy());
+  $("condBadge").textContent = `${S.cond} · ${c.name}`; $("condBadge").className = "badge " + S.cond + (isStudy() ? " hidden" : "");
+  let label = "";
+  if (S.task) {
+    if (isStudy()) { const si = stepInfo(); label = `${S.session.pid} · ${si.practice ? "practice" : `task ${si.n} of ${si.total}`}`; }
+    else label = `${S.task.id} · ${S.session.pid} · demo`;
+  }
+  $("taskLabel").textContent = label;
+  $("condNote").textContent = S.task && S.task.practice ? PRACTICE_STYLE_NOTES[S.cond] : (isStudy() ? c.note : c.demoNote);
 }
 function renderLadder() {
   const el = $("ladder");
-  if (S.cond !== "C") {
+  if (!isLadder()) {
+    // Fixed conditions: no ladder in the study (it would reveal the condition); a single chip in the demo
+    el.classList.toggle("hidden", isStudy());
     el.innerHTML = `<div class="step ${S.hints.some((h) => h.status === "done") ? "on" : ""}"><b>${S.cond === "A" ? "Full answer" : "One hint"}</b>${S.cond === "A" ? "complete fix" : "concept only"}</div>`;
     return;
   }
+  el.classList.remove("hidden");
+  const locked = S.level === 3 && S.runsSinceL3 < 1;
   el.innerHTML = [1, 2, 3, 4].map((l) => {
-    const cls = l <= S.level ? "on" : (S.offer && S.offer.level === l ? "offered" : "");
-    return `<div class="step ${cls}"><b>L${l}</b>${LEVEL_NAMES[l]}</div>`;
+    let cls = l <= S.level ? "on" : (S.offer && S.offer.level === l ? "offered" : "");
+    if (l === 4 && locked && !cls) cls = "locked";
+    const sub = l === 4 && locked ? "🔒 run once more" : LEVEL_NAMES[l];
+    return `<div class="step ${cls}"><b>L${l}</b>${sub}</div>`;
   }).join("");
 }
 function renderOffer() {
   const el = $("offer");
-  if (!S.offer || S.cond !== "C" || !S.active) { el.classList.add("hidden"); return; }
+  if (!S.offer || !isLadder() || !S.active) { el.classList.add("hidden"); return; }
   el.classList.remove("hidden");
-  el.innerHTML = `<span>💡 An <b>L${S.offer.level}</b> hint (${LEVEL_NAMES[S.offer.level].toLowerCase()}) is ready for you.</span><span class="spacer"></span>
+  const why = OFFER_REASONS[S.offer.rule] || "";
+  el.innerHTML = `<span>💡 An <b>L${S.offer.level}</b> hint (${LEVEL_NAMES[S.offer.level].toLowerCase()}) is ready for you.<span class="why">Why now: ${esc(why)}</span></span><span class="spacer"></span>
     <button class="small primary" id="offAccept">Show it</button><button class="small" id="offDefer">Not now</button>`;
   $("offAccept").onclick = () => act("request", "screen");
   $("offDefer").onclick = () => act("defer", "screen");
 }
 function hintHtml(h) {
-  const label = S.cond === "A" && h.level === 4 ? "Full answer" : `L${h.level} · ${LEVEL_NAMES[h.level]}`;
-  const meta = h.status === "streaming" ? "writing…" : (h.ms ? (h.ms / 1000).toFixed(1) + " s" : "");
+  const label = hintLabel(h);
+  const meta = h.status === "streaming" ? "writing…" : (h.ms && !isStudy() ? (h.ms / 1000).toFixed(1) + " s" : "");
   let body;
-  if (h.error) body = `<div class="err">Could not get a hint: ${esc(h.error)}</div>`;
+  if (h.error) body = `<div class="err">Help is not available right now. Please tell the researcher.</div><details><summary>Technical details (for the researcher)</summary><code>${esc(h.error)}</code></details>`;
   else if (!h.text && h.thinking) body = '<div class="thinking">Thinking</div>';
   else body = `<div class="body">${md(h.text)}</div>`;
   const conf = h.status === "done" ? `<div class="conf" data-h="${h.id}">How confident are you now? </div>` : "";
@@ -946,7 +1347,7 @@ function attachConf(el, h) {
 function renderHints() {
   const box = $("hints");
   if (!S.hints.length) {
-    box.innerHTML = `<div class="empty">${S.active ? `No help yet. Press <b>${CONDS[S.cond].req}</b> (or the device button) when you want it.` : "Help appears here once the task starts."}</div>`;
+    box.innerHTML = `<div class="empty">${S.active ? "No help yet. Press <b>Request</b> on the device (or Alt+1) when you want it." : "Help appears here once the task starts."}</div>`;
     return;
   }
   box.innerHTML = S.hints.map((h) => `<div class="hint ${h.level === 4 ? "lv4" : ""}" id="hint-${h.id}">${hintHtml(h)}</div>`).join("");
@@ -954,19 +1355,26 @@ function renderHints() {
   box.scrollTop = box.scrollHeight;
 }
 function renderControls() {
-  const isC = S.cond === "C";
-  $("btnReq").innerHTML = `${CONDS[S.cond].req}<kbd>Alt+1</kbd>`;
+  const ladder = isLadder();
+  // Device-first: when the ESP32 is connected it is THE help control; the screen shows how to use it
+  const deviceMode = S.settings.deviceFirst && S.deviceSeen;
+  $("controls").classList.toggle("hidden", deviceMode);
+  $("deviceHint").classList.toggle("hidden", !deviceMode);
+  $("deviceHint").innerHTML = ladder
+    ? "Use the device: <b>Request</b> = get help · <b>Defer</b> = not now · <b>Silence</b> = stop offers" + (S.silenced ? " <b>(silenced)</b>" : "") + ". Backup keys: Alt+1 / Alt+2 / Alt+3."
+    : "Use the <b>Request</b> button on the device to get help. Backup key: Alt+1.";
+  $("btnReq").innerHTML = "Request<kbd>Alt+1</kbd>";
   $("btnReq").disabled = !S.active || S.generating;
-  $("btnDefer").classList.toggle("hidden", !isC);
-  $("btnSilence").classList.toggle("hidden", !isC);
+  $("btnDefer").classList.toggle("hidden", !ladder);
+  $("btnSilence").classList.toggle("hidden", !ladder);
   $("btnDefer").disabled = !S.active; $("btnSilence").disabled = !S.active;
   $("btnSilence").classList.toggle("on", S.silenced);
   $("btnSilence").innerHTML = (S.silenced ? "Silenced" : "Silence") + "<kbd>Alt+3</kbd>";
-  $("btnRun").disabled = !S.active; $("btnEnd").disabled = !S.active;
+  $("btnRun").disabled = !S.active; $("btnEnd").disabled = !S.active; $("btnResetCode").disabled = !S.active;
 }
 function renderPolicy() {
   const el = $("policy");
-  if (!S.settings.showPolicy || S.cond !== "C") { el.classList.add("hidden"); return; }
+  if (!S.settings.showPolicy || !isLadder() || isStudy()) { el.classList.add("hidden"); return; }
   el.classList.remove("hidden");
   const blocked = offersBlocked();
   const defer = Date.now() < S.deferUntil ? ` ${Math.ceil((S.deferUntil - Date.now()) / 1000)}s` : "";
@@ -983,8 +1391,34 @@ function renderResults(r, passed, total) {
   if (r.stdout) h += `<pre class="stdout">${esc(r.stdout)}</pre>`;
   $("results").innerHTML = h;
 }
-function renderAll() { renderHeader(); renderLadder(); renderOffer(); renderHints(); renderControls(); renderPolicy(); }
-setInterval(() => { if (S.active && S.cond === "C" && Date.now() < S.deferUntil + 1500) renderPolicy(); }, 1000);
+function renderGuide() {
+  const g = $("guide");
+  if (!S.task) { g.classList.add("hidden"); return; }
+  if (S.task.practice) {
+    const done = S.practiceSteps;
+    const styles = `<span class="stylebtns">${PRACTICE_STYLES.map(([c, l]) =>
+      `<button type="button" class="${S.cond === c ? "sel" : ""}" data-style="${c}" ${S.generating || !S.active ? "disabled" : ""}>${l}${done["style_" + c] ? " ✓" : ""}</button>`).join("")}</span>`;
+    g.innerHTML = `<div class="practice"><span class="tag">PRACTICE · NOT MEASURED</span>
+      <div class="gtext"><b>Try each step. They tick when you do them.</b>
+        <ol>${PRACTICE_STEPS.map(([k, t]) => `<li class="${done[k] ? "done" : ""}">${t.replace("{STYLES}", styles)}</li>`).join("")}</ol></div>
+      ${isStudy() ? `<button id="btnPracticeDone" class="primary" ${done.solved || !S.active ? "" : "disabled"}>Continue to the real tasks</button>` : ""}</div>`;
+    const b = $("btnPracticeDone");
+    if (b) b.onclick = () => { if (S.active) finishTask("solved"); };
+    g.querySelectorAll("[data-style]").forEach((btn) => { btn.onclick = () => setPracticeStyle(btn.dataset.style); });
+    g.classList.remove("hidden");
+    return;
+  }
+  if (isStudy()) {
+    const si = stepInfo();
+    g.innerHTML = `<div class="measured"><span class="tag">TASK ${si.n} OF ${si.total} · MEASURED</span>
+      <span class="gtext muted">Up to 10 minutes. It is fine not to finish. Use the AI help as much or as little as you like.</span></div>`;
+    g.classList.remove("hidden");
+    return;
+  }
+  g.classList.add("hidden");
+}
+function renderAll() { renderHeader(); renderGuide(); renderLadder(); renderOffer(); renderHints(); renderControls(); renderPolicy(); }
+setInterval(() => { if (S.active && isLadder() && Date.now() < S.deferUntil + 1500) renderPolicy(); }, 1000);
 
 /* ============================== settings dialog ============================== */
 function fillModelSelect(models, current) {
@@ -995,7 +1429,7 @@ function openSettings() {
   const st = S.settings;
   $("stApi").value = st.apiType; $("stEndpoint").value = st.endpoint; $("stKey").value = st.apiKey;
   $("stReason").value = st.reasoning; $("stTemp").value = st.temperature; $("stLang").value = st.lang;
-  $("stRelay").value = st.relay; $("stPolicy").checked = st.showPolicy;
+  $("stRelay").value = st.relay; $("stPolicy").checked = st.showPolicy; $("stDevice").checked = st.deviceFirst;
   fillModelSelect(S.models, st.model);
   $("testOut").textContent = "";
   $("logInfo").textContent = `${S.log.length} log records stored in this browser (also written to demo/events.jsonl by the relay).`;
@@ -1004,7 +1438,7 @@ function openSettings() {
 function readSettingsForm() {
   return { apiType: $("stApi").value, endpoint: $("stEndpoint").value.trim() || DEFAULTS.endpoint, model: $("stModel").value,
     apiKey: $("stKey").value, reasoning: $("stReason").value, temperature: parseFloat($("stTemp").value) || 0,
-    lang: $("stLang").value, relay: $("stRelay").value.trim() || defaultRelay(), showPolicy: $("stPolicy").checked };
+    lang: $("stLang").value, relay: $("stRelay").value.trim() || defaultRelay(), showPolicy: $("stPolicy").checked, deviceFirst: $("stDevice").checked };
 }
 async function refreshModelsFromForm() {
   const old = S.settings; S.settings = { ...old, ...readSettingsForm() };
@@ -1030,12 +1464,13 @@ async function saveSettings() {
   $("dlgSettings").close();
   if (S.settings.relay !== prevRelay) connectRelay();
   await checkLLM();
-  renderPolicy();
+  renderPolicy(); renderControls();
 }
 
 /* ============================== wiring ============================== */
 TASKS.forEach((t) => { const o = document.createElement("option"); o.value = t.id; o.textContent = `${t.id} · ${t.title}`; $("selTask").appendChild(o); });
 $("btnRun").onclick = runCode;
+$("btnResetCode").onclick = resetCode;
 $("btnEnd").onclick = () => { if (confirm("End this task now?")) finishTask("ended"); };
 $("btnReq").onclick = () => act("request", "screen");
 $("btnDefer").onclick = () => act("defer", "screen");
@@ -1051,6 +1486,14 @@ $("btnClearLog").onclick = () => { if (confirm("Delete all log records stored in
 document.querySelectorAll(".exportJson").forEach((b) => (b.onclick = exportJson));
 document.querySelectorAll(".exportCsv").forEach((b) => (b.onclick = exportCsv));
 $("btnPreStart").onclick = startTask;
+$("btnWelcomeGo").onclick = () => { $("dlgWelcome").close(); S.session.step = 0; prepareTask(S.session.plan[0].task, S.session.plan[0].cond); };
+$("btnWelcomeBack").onclick = backFromWelcome;
+$("xWelcome").onclick = backFromWelcome;
+$("btnTransGo").onclick = transReady;
+$("btnTransBack").onclick = backToPractice;
+$("xTrans").onclick = backToPractice;
+$("btnPreBack").onclick = backFromPreTask;
+$("xPre").onclick = backFromPreTask;
 $("btnPostSubmit").onclick = submitPost;
 $("btnSessStart").onclick = startSession;
 $("btnNewSession").onclick = () => { $("dlgDone").close(); renderPlanPreview(); $("dlgSession").showModal(); };
@@ -1058,7 +1501,12 @@ $("inPid").oninput = renderPlanPreview;
 document.querySelectorAll("input[name=mode]").forEach((r) => (r.onchange = renderPlanPreview));
 $("btnRestart").onclick = () => { if (S.active) finishTask("ended"); prepareTask($("selTask").value, $("selCond").value); };
 $("selTask").onchange = $("selCond").onchange = () => { if (S.active) finishTask("ended"); prepareTask($("selTask").value, $("selCond").value); };
-["dlgTask", "dlgPost", "dlgSession"].forEach((id) => $(id).addEventListener("cancel", (e) => e.preventDefault()));
+// Esc = the dialog's Back action where one exists; otherwise Esc does nothing (no accidental skips)
+const ESC_BACK = { dlgWelcome: backFromWelcome, dlgTransition: backToPractice, dlgTask: () => { if (preBackTarget()) backFromPreTask(); } };
+["dlgTask", "dlgPost", "dlgSession", "dlgWelcome", "dlgTransition"].forEach((id) => $(id).addEventListener("cancel", (e) => {
+  e.preventDefault();
+  if (ESC_BACK[id]) ESC_BACK[id]();
+}));
 document.addEventListener("keydown", (e) => {
   if (!e.altKey || document.querySelector("dialog[open]")) return;
   const map = { "1": "request", "2": "defer", "3": "silence" };

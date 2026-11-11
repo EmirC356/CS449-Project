@@ -1,0 +1,363 @@
+<title>Calibrated Feedback Roadmap</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;800&family=Source+Sans+3:wght@400;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: one reading column with a sticky owner filter; weeks as a vertical timeline, reference tables below. */
+:root {
+  --bg: #f4f7f7; --surface: #ffffff; --sunken: #e9efef; --fg: #16222a; --muted: #566771; --line: #d3dddd;
+  --accent: #0f7b6c; --accent-soft: #dcefeb;
+  --ok: #0c7a43; --ok-soft: #e1f3e8; --warn: #9a5b00; --warn-soft: #fbefd8; --crit: #b42318; --crit-soft: #fbe5e2; --todo: #4f5f6b; --todo-soft: #e7ecef;
+  --display: "Archivo", "Arial Narrow", Arial, sans-serif;
+  --body: "Source Sans 3", "Segoe UI", system-ui, sans-serif;
+  --mono: "JetBrains Mono", Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0e1517; --surface: #152024; --sunken: #1b282d; --fg: #e2eaec; --muted: #9db0b7; --line: #2a3a40;
+  --accent: #46c2ad; --accent-soft: #163a35;
+  --ok: #5fd197; --ok-soft: #143326; --warn: #f0b45a; --warn-soft: #3a2a12; --crit: #ff8a7d; --crit-soft: #3d1a17; --todo: #b4c2c9; --todo-soft: #24323a;
+  color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg: #0e1517; --surface: #152024; --sunken: #1b282d; --fg: #e2eaec; --muted: #9db0b7; --line: #2a3a40;
+  --accent: #46c2ad; --accent-soft: #163a35;
+  --ok: #5fd197; --ok-soft: #143326; --warn: #f0b45a; --warn-soft: #3a2a12; --crit: #ff8a7d; --crit-soft: #3d1a17; --todo: #b4c2c9; --todo-soft: #24323a;
+  color-scheme: dark; }
+
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--fg); font: 16px/1.55 var(--body); margin: 0; }
+.wrap { max-width: 1040px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 28px 64px; }
+h1, h2, h3 { font-family: var(--display); text-wrap: balance; margin: 0; letter-spacing: -0.01em; }
+h1 { font-size: clamp(30px, 5vw, 44px); font-weight: 800; line-height: 1.05; }
+h2 { font-size: 24px; font-weight: 700; margin-bottom: 4px; }
+h3 { font-size: 17px; font-weight: 700; }
+p { margin: 0; max-width: 68ch; }
+a { color: var(--accent); }
+code, .mono { font-family: var(--mono); font-size: 0.86em; }
+.eyebrow { font: 600 12px/1 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--accent); }
+.muted { color: var(--muted); }
+section { margin-top: 44px; display: grid; gap: 14px; }
+.lede { font-size: 18px; color: var(--muted); max-width: 70ch; }
+
+/* header */
+header { display: grid; gap: 12px; }
+.status-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
+.pill { display: inline-flex; align-items: center; gap: 6px; font: 600 12px/1 var(--mono); padding: 6px 10px; border-radius: 999px; background: var(--sunken); color: var(--fg); white-space: nowrap; }
+.pill.ok { background: var(--ok-soft); color: var(--ok); }
+.pill.warn { background: var(--warn-soft); color: var(--warn); }
+.pill.crit { background: var(--crit-soft); color: var(--crit); }
+.pill.todo { background: var(--todo-soft); color: var(--todo); }
+.pill.accent { background: var(--accent-soft); color: var(--accent); }
+
+/* now panel */
+.now { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.now > div { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; display: grid; gap: 6px; align-content: start; min-width: 0; }
+.now .who { font: 600 12px var(--mono); color: var(--muted); }
+@media (max-width: 760px) { .now { grid-template-columns: 1fr; } }
+
+/* hardware */
+.hw { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); gap: 12px; align-items: stretch; }
+.hw .col { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; display: grid; gap: 10px; align-content: start; min-width: 0; }
+.hw .mid { display: grid; place-items: center; font: 600 12px var(--mono); color: var(--muted); text-align: center; padding: 0 4px; }
+.io { display: grid; grid-template-columns: 112px minmax(0, 1fr); gap: 4px 12px; font-size: 15px; }
+.io dt { font: 600 13px var(--mono); color: var(--accent); }
+.io dd { margin: 0; }
+.planned { font: 600 11px var(--mono); color: var(--warn); margin-left: 6px; }
+@media (max-width: 760px) { .hw { grid-template-columns: 1fr; } .hw .mid { padding: 2px; } }
+blockquote { margin: 0; padding: 10px 14px; border-left: 3px solid var(--accent); background: var(--accent-soft); border-radius: 0 8px 8px 0; font-size: 15px; }
+
+/* filter */
+.filter { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg); padding-block: 10px; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; border-bottom: 1px solid var(--line); }
+.filter span { font: 600 12px var(--mono); color: var(--muted); margin-right: 4px; }
+.filter button { font: 600 13px var(--body); padding: 5px 12px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--fg); cursor: pointer; }
+.filter button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--surface); }
+.filter button:focus-visible, .filter button:hover { outline: 2px solid var(--accent); outline-offset: 1px; }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--bg); }
+
+/* timeline */
+.weeks { display: grid; gap: 0; }
+.week { display: grid; grid-template-columns: 132px minmax(0, 1fr); gap: 18px; padding-block: 18px; border-top: 1px solid var(--line); }
+.week:first-child { border-top: 0; }
+.wk { display: grid; gap: 4px; align-content: start; }
+.wk b { font: 800 22px/1 var(--display); }
+.wk .dates { font: 400 12px var(--mono); color: var(--muted); font-variant-numeric: tabular-nums; }
+.wk .milestone { font: 600 12px var(--mono); color: var(--accent); }
+.week.current .wk b { color: var(--accent); }
+.tasks { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; min-width: 0; }
+.task { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 10px; align-items: baseline; padding: 9px 12px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; }
+.task .t { min-width: 0; }
+.task .t small { display: block; color: var(--muted); font-size: 14px; }
+.task .own { font: 600 12px var(--mono); color: var(--muted); white-space: nowrap; }
+.task .st { font: 600 11px/1 var(--mono); padding: 5px 8px; border-radius: 6px; white-space: nowrap; }
+.st.done { background: var(--ok-soft); color: var(--ok); }
+.st.risk { background: var(--crit-soft); color: var(--crit); }
+.st.blocked { background: var(--warn-soft); color: var(--warn); }
+.st.todo { background: var(--todo-soft); color: var(--todo); }
+.task.dim { display: none; }
+.week.empty { display: none; }
+@media (max-width: 640px) {
+  .week { grid-template-columns: 1fr; gap: 10px; }
+  .task { grid-template-columns: auto minmax(0, 1fr); }
+  .task .own { grid-column: 2; }
+}
+
+/* tables */
+.table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
+table { border-collapse: collapse; width: 100%; font-size: 15px; min-width: 680px; }
+th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font: 600 12px var(--mono); color: var(--muted); text-transform: uppercase; letter-spacing: .05em; background: var(--sunken); }
+tr:last-child td { border-bottom: 0; }
+td.n { font-family: var(--mono); color: var(--muted); font-variant-numeric: tabular-nums; }
+.sev { font: 600 11px var(--mono); padding: 3px 7px; border-radius: 5px; white-space: nowrap; }
+.sev.major { background: var(--crit-soft); color: var(--crit); }
+.sev.minor { background: var(--warn-soft); color: var(--warn); }
+
+/* steps */
+.steps { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.steps > div { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px; display: grid; gap: 6px; align-content: start; min-width: 0; }
+.steps .k { font: 800 26px/1 var(--display); color: var(--accent); }
+@media (max-width: 860px) { .steps { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 480px) { .steps { grid-template-columns: 1fr; } }
+.qbox { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; display: grid; gap: 8px; }
+ul.plain { margin: 0; padding-left: 20px; display: grid; gap: 4px; }
+footer { margin-top: 48px; font-size: 14px; color: var(--muted); }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <span class="eyebrow">CS 449/549 · Topic 2 · Team roadmap</span>
+    <h1>Calibrated AI Feedback for Novice Programmers</h1>
+    <p class="lede">Where the project stands on 11 November 2026 (Week 7), what each person does until Week 14, and how the ESP32 earns its place in the design.</p>
+    <div class="status-row">
+      <span class="pill crit">PP1 this week · 7%</span>
+      <span class="pill warn">Interviews not done yet</span>
+      <span class="pill warn">Ethics confirmation pending</span>
+      <span class="pill ok">Working prototype with live local LLM</span>
+      <span class="pill ok">10 pre-review issues fixed</span>
+    </div>
+  </header>
+
+  <section aria-labelledby="now-h">
+    <h2 id="now-h">Before Progress Presentation I</h2>
+    <div class="now">
+      <div><span class="who">Person 4 · today</span><h3>Run 4–5 interviews</h3><p>IF100 / CS201 students, 10 minutes each, script in <code>PP1_SPRINT.md</code>. Fill the evidence column on slide 4 with real quotes only.</p></div>
+      <div><span class="who">Person 4 · today</span><h3>Send the ethics email</h3><p>The handbook expected this meeting in Weeks 4–5. Ask the instructor to confirm low risk in writing before any study data is collected.</p></div>
+      <div><span class="who">All · before the slot</span><h3>Dry-run twice with a timer</h3><p>Every member presents. Show <code>demo/app.html</code> with the simulated ESP32 and say clearly that the device is simulated until the cable arrives.</p></div>
+    </div>
+  </section>
+
+  <section aria-labelledby="hw-h">
+    <h2 id="hw-h">What the ESP32 is for</h2>
+    <p>The laptop shows the code and the hints. The ESP32 is the learner's <b>control over the AI</b> and a <b>quiet channel</b> for offers, so help never interrupts the screen. A device that only repeats an on-screen click would be decorative.</p>
+    <blockquote>“The physical object must represent a meaningful user choice, not merely replace a mouse click.” Handbook §3.2</blockquote>
+    <div class="hw">
+      <div class="col">
+        <span class="eyebrow">Learner → system</span>
+        <dl class="io">
+          <dt>Request</dt><dd>Next help level. The learner decides when help comes.</dd>
+          <dt>Defer</dt><dd>Not now. No offers for 2 minutes.</dd>
+          <dt>Silence</dt><dd>Stop offers until pressed again. Request still works.</dd>
+          <dt>Confidence</dt><dd>Turn a dial 1–5 at any time; the policy adapts. <span class="planned">planned: potentiometer</span></dd>
+        </dl>
+      </div>
+      <div class="mid">WebSocket<br>⇄<br>policy</div>
+      <div class="col">
+        <span class="eyebrow">System → learner</span>
+        <dl class="io">
+          <dt>Vibration</dt><dd>A hint is offered. Felt without looking away from the code, so coding flow is not broken.</dd>
+          <dt>LED yellow</dt><dd>Offer waiting.</dd>
+          <dt>LED blue</dt><dd>Silenced.</dd>
+          <dt>LED green</dt><dd>Hint delivered / task solved.</dd>
+        </dl>
+      </div>
+    </div>
+    <p class="muted">In study sessions the app hides its on-screen help buttons while the ESP32 is connected (keyboard Alt+1/2/3 stays as backup), so the device really mediates the interaction. The app already accepts the confidence event; the dial needs firmware in Week 9.</p>
+  </section>
+
+  <section aria-labelledby="plan-h">
+    <h2 id="plan-h">Week by week</h2>
+    <div class="filter" role="group" aria-label="Show tasks for">
+      <span>Show</span>
+      <button type="button" data-owner="all" aria-pressed="true">Everyone</button>
+      <button type="button" data-owner="P1" aria-pressed="false">Person 1 · hardware</button>
+      <button type="button" data-owner="P2" aria-pressed="false">Person 2 · frontend</button>
+      <button type="button" data-owner="P3" aria-pressed="false">Person 3 · backend</button>
+      <button type="button" data-owner="P4" aria-pressed="false">Person 4 · research</button>
+      <button type="button" data-owner="P5" aria-pressed="false">Person 5 · content</button>
+    </div>
+    <div class="weeks" id="weeks">
+
+      <div class="week current">
+        <div class="wk"><b>Week 7</b><span class="dates">Nov 9–13</span><span class="milestone">PP1 · 7%</span></div>
+        <ul class="tasks">
+          <li class="task" data-owner="all"><span class="st done">done</span><span class="t">Repo, plan, sprint plan, 12-slide PP1 deck<small>docs/PP1_Calibrated_AI_Feedback.pptx, PP1_SPRINT.md</small></span><span class="own">Team</span></li>
+          <li class="task" data-owner="P2 P3"><span class="st done">done</span><span class="t">Working prototype: browser IDE, 3 conditions, calibration policy, live local-LLM hints, study mode, logging<small>demo/app.html, demo/server.py</small></span><span class="own">P2 · P3</span></li>
+          <li class="task" data-owner="P1"><span class="st done">done</span><span class="t">BOOT-button firmware and simulated ESP32 for testing without hardware<small>firmware/, demo/fake_esp32.py</small></span><span class="own">P1</span></li>
+          <li class="task" data-owner="P4"><span class="st risk">at risk</span><span class="t">4–5 user interviews → needs → requirements, real quotes on slide 4</span><span class="own">P4</span></li>
+          <li class="task" data-owner="P4"><span class="st risk">at risk</span><span class="t">Ethics email to instructor and TA (late; Weeks 4–5 expected)</span><span class="own">P4</span></li>
+          <li class="task" data-owner="P4 P5"><span class="st todo">to do</span><span class="t">1–2 personas and a hierarchical task analysis of “debugging with AI help”<small>From the interview data (Week 3 lecture); strengthens slide 4 and the report</small></span><span class="own">P4 · P5</span></li>
+          <li class="task" data-owner="P5"><span class="st todo">to do</span><span class="t">Verify CS50 Duck and CodeHelp rows on slide 6; add team names on slide 1</span><span class="own">P5</span></li>
+          <li class="task" data-owner="P1"><span class="st blocked">blocked</span><span class="t">Run the BOOT-button demo on the real board<small>Needs a USB data cable</small></span><span class="own">P1</span></li>
+          <li class="task" data-owner="all"><span class="st todo">to do</span><span class="t">Two timed dry runs; everyone presents their section</span><span class="own">All</span></li>
+        </ul>
+      </div>
+
+      <div class="week">
+        <div class="wk"><b>Week 8</b><span class="dates">Nov 16–20</span><span class="milestone">midterm · keep light</span></div>
+        <ul class="tasks">
+          <li class="task" data-owner="P1"><span class="st todo">to do</span><span class="t">Order parts: 3 buttons, RGB LED, coin vibration motor + NPN transistor + diode, 10 kΩ potentiometer, breadboard, jumpers, USB cable</span><span class="own">P1</span></li>
+          <li class="task" data-owner="P5 P3"><span class="st todo">to do</span><span class="t">Generate hint ladders L1–L4 for T1–T3, review each level by hand, freeze them<small>Tasks: longest rising run, most common word, average of valid scores (one root cause each, no crash, some tests pass). Live hints leak the cause and sometimes add wrong advice; frozen ladders keep conditions comparable</small></span><span class="own">P5 · P3</span></li>
+          <li class="task" data-owner="all"><span class="st todo">to do</span><span class="t">Decide with the TA: show the solution to everyone after the questionnaire? (keeps condition B as a fixed hint-only baseline)</span><span class="own">All</span></li>
+        </ul>
+      </div>
+
+      <div class="week">
+        <div class="wk"><b>Week 9</b><span class="dates">Nov 23–27</span><span class="milestone">expert evaluation</span></div>
+        <ul class="tasks">
+          <li class="task" data-owner="P1"><span class="st todo">to do</span><span class="t">Firmware: Request / Defer / Silence buttons, confidence dial, RGB LED states, vibration on offers, serial fallback<small>Events: request · defer · silence · confidence {value 1–5}</small></span><span class="own">P1</span></li>
+          <li class="task" data-owner="P3"><span class="st todo">to do</span><span class="t">“Frozen ladder” mode: load reviewed hints from a JSON file instead of live generation; keep live mode for the demo</span><span class="own">P3</span></li>
+          <li class="task" data-owner="P2"><span class="st todo">to do</span><span class="t">Frontend polish from the internal review; keyboard and screen-reader pass</span><span class="own">P2</span></li>
+          <li class="task" data-owner="P4"><span class="st todo">to do</span><span class="t">Study protocol, consent form, final questionnaires; recruit through IF100 / CS201 TAs</span><span class="own">P4</span></li>
+          <li class="task" data-owner="P4 all"><span class="st todo">to do</span><span class="t">Expert evaluation with 3–5 TAs: cognitive walkthrough + heuristic check (plan below)</span><span class="own">P4 lead · All</span></li>
+        </ul>
+      </div>
+
+      <div class="week">
+        <div class="wk"><b>Week 10</b><span class="dates">Nov 30–Dec 4</span><span class="milestone">PP2 · 8%</span></div>
+        <ul class="tasks">
+          <li class="task" data-owner="all"><span class="st todo">to do</span><span class="t">Fix the top expert findings and document the design iteration: issue → change → reason</span><span class="own">All</span></li>
+          <li class="task" data-owner="all"><span class="st todo">to do</span><span class="t">PP2: live end-to-end task with the real ESP32, expert results, the design change, final plan</span><span class="own">All</span></li>
+        </ul>
+      </div>
+
+      <div class="week">
+        <div class="wk"><b>Weeks 11–12</b><span class="dates">Dec 7–18</span><span class="milestone">user study</span></div>
+        <ul class="tasks">
+          <li class="task" data-owner="P4 P5"><span class="st todo">to do</span><span class="t">Run 24 participants (practice + 3 tasks, counterbalanced by participant ID), ~45 min each</span><span class="own">P4 · P5</span></li>
+          <li class="task" data-owner="P3"><span class="st todo">to do</span><span class="t">Analysis from the exported logs: success, time to fix, hint levels, explanation score, autonomy, NASA-TLX per condition</span><span class="own">P3</span></li>
+          <li class="task" data-owner="P1 P2"><span class="st todo">to do</span><span class="t">Stability fixes and a backup demo video</span><span class="own">P1 · P2</span></li>
+        </ul>
+      </div>
+
+      <div class="week">
+        <div class="wk"><b>Week 13</b><span class="dates">see SUCourse</span><span class="milestone">prototype package</span></div>
+        <ul class="tasks">
+          <li class="task" data-owner="all"><span class="st todo">to do</span><span class="t">Submit: repo link, setup guide, hardware list, architecture figure, backup video</span><span class="own">Team leader</span></li>
+        </ul>
+      </div>
+
+      <div class="week">
+        <div class="wk"><b>Week 14</b><span class="dates">see SUCourse</span><span class="milestone">final · 10% + 15%</span></div>
+        <ul class="tasks">
+          <li class="task" data-owner="all"><span class="st todo">to do</span><span class="t">Final presentation and live demo; Demo Day: collect 5–10 visitor responses</span><span class="own">All</span></li>
+          <li class="task" data-owner="P5 all"><span class="st todo">to do</span><span class="t">Final report with every handbook section; each person writes their part and Individual Contributions</span><span class="own">P5 lead · All</span></li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section aria-labelledby="fix-h">
+    <h2 id="fix-h">Internal pre-review: found and fixed</h2>
+    <p>One evaluator inspected <code>app.html</code> against the ten heuristics from the Week 2 lecture before the TA evaluation. All ten issues are fixed and checked in an automated browser run (34 of 34 checks passed). A single internal review does not replace the TA evaluation; use it in the report as an early iteration.</p>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>#</th><th>Problem found</th><th>Heuristic</th><th>Severity</th><th>Change made</th></tr></thead>
+        <tbody>
+          <tr><td class="n">1</td><td>Participants saw the condition name (“C · Calibrated”)</td><td>Study validity</td><td><span class="sev major">major</span></td><td>Study mode shows no condition names; instructions are neutral</td></tr>
+          <tr><td class="n">2</td><td>Researcher policy line visible to participants</td><td>Aesthetic, minimalist</td><td><span class="sev major">major</span></td><td>Shown only in demo mode</td></tr>
+          <tr><td class="n">3</td><td>NASA-TLX sliders started at 50, untouched answers looked real</td><td>Error prevention</td><td><span class="sev major">major</span></td><td>Sliders start unset; every item must be answered</td></tr>
+          <tr><td class="n">4</td><td>No practice; the first condition was confounded with learning the tool. A first fix (a few lines in the start dialog) was still easy to miss</td><td>Help, documentation</td><td><span class="sev major">major</span></td><td>Welcome screen with the device explained; guided practice with a live checklist, a guaranteed offer and all three help styles under neutral names (same order for everyone); clear hand-over to the measured tasks with Back / × / Esc to return to the practice; “Task n of 3 · measured” banner</td></tr>
+          <tr><td class="n">5</td><td>L4 lock gave almost no feedback</td><td>Visibility of system status</td><td><span class="sev major">major</span></td><td>Lock shown on the ladder and in a message box</td></tr>
+          <tr><td class="n">6</td><td>Offers did not say why they appeared</td><td>Visibility</td><td><span class="sev minor">minor</span></td><td>“Why now” line on every offer</td></tr>
+          <tr><td class="n">7</td><td>Screen button names differed from the device</td><td>Consistency</td><td><span class="sev minor">minor</span></td><td>“Request” everywhere</td></tr>
+          <tr><td class="n">8</td><td>Raw HTTP errors shown to students</td><td>Error recovery</td><td><span class="sev minor">minor</span></td><td>Plain message; details folded for the researcher</td></tr>
+          <tr><td class="n">9</td><td>No way back to the original code</td><td>User control</td><td><span class="sev minor">minor</span></td><td>“Reset code” with confirmation</td></tr>
+          <tr><td class="n">10</td><td>New hints not announced to screen readers; animation ignored reduced motion</td><td>Accessibility</td><td><span class="sev minor">minor</span></td><td>Live-region announcements; reduced-motion respected</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="muted">Also added: tests listed before the first run (recognition over recall), device-first mode, and the confidence event for the planned dial.</p>
+  </section>
+
+  <section aria-labelledby="er-h">
+    <h2 id="er-h">Expert evaluation plan · Week 9</h2>
+    <p>Follows the Week 2 lecture workflow. Expert evaluation finds likely breakdowns; it cannot show frequency or satisfaction, which is why the user study follows.</p>
+    <div class="qbox">
+      <span class="eyebrow">Evaluation question</span>
+      <p><b>Can a first-year student who has never seen the tool request, defer and silence AI help with the device, and understand which level of help they received, without the researcher’s help?</b></p>
+      <p class="muted">This is about learnability, so the main method is a cognitive walkthrough; a heuristic check and a domain review of the hint content support it.</p>
+    </div>
+    <div class="steps">
+      <div><span class="k">1</span><h3>Define</h3><p>Question above. Evaluators: 3–5 CS201 / IF100 TAs.</p></div>
+      <div><span class="k">2</span><h3>Scope + scenario</h3><p>“Your IF100 code fails its tests. Find the bug; get help if you need it, but you prefer to solve it yourself.” Do not name controls.</p></div>
+      <div><span class="k">3</span><h3>Inspect alone</h3><p>Each TA works independently, records every issue with evidence and a screenshot, then answers the four walkthrough questions per step.</p></div>
+      <div><span class="k">4</span><h3>Consolidate</h3><p>Merge duplicates, rate severity, fix the top one or two, re-check. That change is the PP2 design iteration.</p></div>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Field</th><th>Example entry</th></tr></thead>
+        <tbody>
+          <tr><td>Location</td><td>Hint panel, offer banner</td></tr>
+          <tr><td>Task step</td><td>Notice that help is available after three failed runs</td></tr>
+          <tr><td>Observed problem</td><td>The learner looks at the editor and misses the banner</td></tr>
+          <tr><td>Related heuristic</td><td>Visibility of system status</td></tr>
+          <tr><td>Evidence</td><td>Screenshot; the vibration is the only signal while the learner looks at the code</td></tr>
+          <tr><td>Severity</td><td>Cosmetic · Minor · Major · Critical, with a reason (frequency, recovery, outcome)</td></tr>
+          <tr><td>Recommendation</td><td>Written after the problem, never instead of it</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="qbox">
+      <span class="eyebrow">Walkthrough questions for every step</span>
+      <ul class="plain">
+        <li>Will the learner try to achieve the right effect?</li>
+        <li>Will they notice that the correct action is available (button, vibration, light)?</li>
+        <li>Will they connect the action with the effect they want?</li>
+        <li>After acting, will they see progress toward the goal?</li>
+      </ul>
+      <p class="muted">Add one domain question for the TAs: does each hint stay within its level, or does it give away the fix too early?</p>
+    </div>
+  </section>
+
+  <section aria-labelledby="risk-h">
+    <h2 id="risk-h">Open risks and decisions</h2>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Risk or decision</th><th>Plan</th><th>Owner</th></tr></thead>
+        <tbody>
+          <tr><td>Live LLM hints exceed their level, and can add a wrong extra suggestion (T1 L3 told learners to start <code>best</code> at 0, which is not the bug)</td><td>Freeze reviewed ladders for the study; report both problems as design evidence</td><td>P5 · P3</td></tr>
+          <tr><td>Ethics not yet confirmed</td><td>No data collection before written confirmation</td><td>P4</td></tr>
+          <tr><td>Hardware not running yet (no cable, no parts)</td><td>Cable this week, parts in Week 8; simulated ESP32 and keyboard as backup</td><td>P1</td></tr>
+          <tr><td>Fewer than 20 participants</td><td>Target 24; recruit through TAs from Week 9</td><td>P4 · P5</td></tr>
+          <tr><td>Condition B can leave learners stuck</td><td>Measured on purpose (H3); show the solution to everyone after the questionnaire if the TA agrees</td><td>All</td></tr>
+          <tr><td>Study laptop needs a GPU for the local model</td><td>Use the laptop with the RTX GPU for sessions, or smaller model gemma4:e4b; frozen ladders remove this need</td><td>P3</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <footer>
+    <p>Repo: <code>github.com/EmirC356/CS449-Project</code> · Run the app: <code>python demo/server.py</code>, then open <code>http://localhost:8765/</code>. Course basis: Week 2 (expert evaluation), Week 3 (users, ISO 9241-210, personas, task analysis), Week 4 (prototyping), project handbook.</p>
+  </footer>
+</div>
+
+<script>
+(() => {
+  const buttons = [...document.querySelectorAll(".filter button")];
+  const apply = (owner) => {
+    buttons.forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.owner === owner)));
+    document.querySelectorAll(".task").forEach((t) => {
+      const owners = t.dataset.owner.split(" ");
+      t.classList.toggle("dim", owner !== "all" && !owners.includes(owner) && !owners.includes("all"));
+    });
+    document.querySelectorAll(".week").forEach((w) => {
+      w.classList.toggle("empty", !w.querySelector(".task:not(.dim)"));
+    });
+    try { localStorage.setItem("roadmap-owner", owner); } catch (e) { /* per-viewer convenience only */ }
+  };
+  buttons.forEach((b) => b.addEventListener("click", () => apply(b.dataset.owner)));
+  let saved = "all";
+  try { saved = localStorage.getItem("roadmap-owner") || "all"; } catch (e) { /* ignore */ }
+  apply(buttons.some((b) => b.dataset.owner === saved) ? saved : "all");
+})();
+</script>
